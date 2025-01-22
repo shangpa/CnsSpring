@@ -1,16 +1,22 @@
 package com.example.springjwt.jwt;
 
 import com.example.springjwt.dto.CustomUserDetails;
+import com.example.springjwt.dto.LoginRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Collection;
 import java.util.Iterator;
 
@@ -29,17 +35,38 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
 
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
+        System.out.println("Login 필터 입니다 ---------------");
 
-        //클라이언트 요청에서 username, password 추출
-        String username = obtainUsername(request);
-        String password = obtainPassword(request);
+        try {
+            // JSON 데이터를 읽기 위한 BufferedReader 사용
+            BufferedReader reader = request.getReader();
+            StringBuilder json = new StringBuilder();
+            String line;
 
-        //스프링 시큐리티에서 username과 password를 검증하기 위해서는 token에 담아야 함
-        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(username, password, null);
+            while ((line = reader.readLine()) != null) {
+                json.append(line);
+            }
 
-        //token에 담은 검증을 위한 AuthenticationManager로 전달
-        return authenticationManager.authenticate(authToken);
+            // JSON 문자열을 파싱하여 username과 password 추출
+            ObjectMapper objectMapper = new ObjectMapper();
+            LoginRequest loginRequest = objectMapper.readValue(json.toString(), LoginRequest.class);
+
+            String username = loginRequest.getUsername();
+            String password = loginRequest.getPassword();
+            System.out.println("username : " + username);
+            System.out.println("password : " + password);
+
+            // 검증을 위한 Authentication 객체 생성
+            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(username, password, null);
+
+            // AuthenticationManager로 전달하여 검증 진행
+            return authenticationManager.authenticate(authToken);
+
+        } catch (IOException e) {
+            throw new AuthenticationServiceException("Invalid JSON format", e);
+        }
     }
+
 
     //로그인 성공시 실행하는 메소드 (여기서 JWT를 발급하면 됨)
     @Override
@@ -64,6 +91,18 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
          */
         response.addHeader("Authorization", "Bearer " + token);
 
+        // 응답이 이미 커밋되었는지 확인
+        if (!response.isCommitted()) {
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+
+            try (PrintWriter out = response.getWriter()) {
+                out.print("{ \"message\": \"Login successful\", \"token\": \"" + token + "\" }");
+                out.flush();
+            } catch (IOException ex) {
+            throw new RuntimeException(ex);
+            }
+        }
     }
 
     //로그인 실패시 실행하는 메소드

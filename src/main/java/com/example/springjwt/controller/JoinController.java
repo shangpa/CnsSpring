@@ -2,7 +2,7 @@ package com.example.springjwt.controller;
 
 import com.example.springjwt.dto.JoinDTO;
 import com.example.springjwt.jwt.ApiResponse;
-import com.example.springjwt.service.JoinService;
+import com.example.springjwt.User.JoinService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;

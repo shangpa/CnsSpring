@@ -1,6 +1,6 @@
 package com.example.springjwt.recipe;
 
-import com.example.springjwt.entity.UserEntity;
+import com.example.springjwt.User.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
 

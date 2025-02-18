@@ -1,14 +1,11 @@
 package com.example.springjwt.recipe;
 
-import com.example.springjwt.entity.UserEntity;
-import com.example.springjwt.repository.UserRepository;
-import jakarta.transaction.Transactional;
+import com.example.springjwt.User.UserEntity;
+import com.example.springjwt.User.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor

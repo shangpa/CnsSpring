@@ -1,8 +1,6 @@
-package com.example.springjwt.service;
+package com.example.springjwt.User;
 
 import com.example.springjwt.dto.CustomUserDetails;
-import com.example.springjwt.entity.UserEntity;
-import com.example.springjwt.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;

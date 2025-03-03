@@ -33,12 +33,22 @@ public class RecipeController {
         return ResponseEntity.ok(RecipeDTO.fromEntity(recipe));
     }
 
-    // 레시피 생성
     @PostMapping
-    public ResponseEntity<RecipeDTO> createRecipe(@RequestBody RecipeDTO recipeDTO,
-                                                  @AuthenticationPrincipal UserDetails userDetails) {
-        Recipe recipe = recipeService.createRecipe(recipeDTO, userDetails.getUsername()); // 로그인한 유저 정보 전달
-        return ResponseEntity.ok(RecipeDTO.fromEntity(recipe));
+    public ResponseEntity<RecipeResponseDTO> createRecipe(
+            @RequestBody RecipeDTO recipeDTO,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        // DTO 데이터 출력
+        System.out.println("Received RecipeDTO: " + recipeDTO);
+
+        Recipe recipe = recipeService.createRecipe(recipeDTO, userDetails.getUsername());
+
+        RecipeResponseDTO response = new RecipeResponseDTO(
+                true,
+                "레시피가 성공적으로 생성되었습니다.",
+                recipe.getRecipeId()
+        );
+        return ResponseEntity.ok(response);
     }
 
     // 레시피 수정

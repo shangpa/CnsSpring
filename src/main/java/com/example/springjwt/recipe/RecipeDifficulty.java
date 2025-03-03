@@ -1,5 +1,5 @@
 package com.example.springjwt.recipe;
 
 public enum RecipeDifficulty {
-    EASY, MEDIUM, HARD
+    초급, 중급, 상급
 }

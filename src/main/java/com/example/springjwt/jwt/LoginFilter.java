@@ -81,7 +81,7 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
         GrantedAuthority auth = iterator.next();
         String role = auth.getAuthority();
         //토큰 발급
-        String token = jwtUtil.createJwt(userName, role, 60*60*10L);
+        String token = jwtUtil.createJwt(userName, role, 1000L * 60 * 60 * 10); // 10시간
         /*
         Authorization 키에 token 값을 "Bearer " 넣음
         Authorization: 타입 인증토큰

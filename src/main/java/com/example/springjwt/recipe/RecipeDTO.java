@@ -16,9 +16,11 @@ public class RecipeDTO {
     private String category;
     private String ingredients;
     private String alternativeIngredients;
+    private String handlingMethods;
     private String cookingSteps;
     private String mainImageUrl;
     private String difficulty;
+    private String tags;
     private int cookingTime;
     private int servings;
     private LocalDateTime createdAt;
@@ -31,9 +33,11 @@ public class RecipeDTO {
                 .category(recipe.getCategory().name()) // ENUM -> String 변환
                 .ingredients(recipe.getIngredients())
                 .alternativeIngredients(recipe.getAlternativeIngredients())
+                .handlingMethods(recipe.getHandlingMethods())
                 .cookingSteps(recipe.getCookingSteps())
                 .mainImageUrl(recipe.getMainImageUrl())
                 .difficulty(recipe.getDifficulty().name()) // ENUM -> String 변환
+                .tags(recipe.getTags())
                 .cookingTime(recipe.getCookingTime())
                 .servings(recipe.getServings())
                 .createdAt(recipe.getCreatedAt())
@@ -47,9 +51,11 @@ public class RecipeDTO {
                 .category(RecipeCategory.valueOf(this.category)) // String -> ENUM 변환
                 .ingredients(this.ingredients)
                 .alternativeIngredients(this.alternativeIngredients)
+                .handlingMethods(this.handlingMethods)
                 .cookingSteps(this.cookingSteps)
                 .mainImageUrl(this.mainImageUrl)
                 .difficulty(RecipeDifficulty.valueOf(this.difficulty)) // String -> ENUM 변환
+                .tags(this.tags)
                 .cookingTime(this.cookingTime)
                 .servings(this.servings)
                 .createdAt(this.createdAt != null ? this.createdAt : LocalDateTime.now())

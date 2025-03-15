@@ -38,6 +38,10 @@ public class Recipe {
 
     @Lob
     @Column(columnDefinition = "TEXT")
+    private String handlingMethods; // JSON 형식의 처리 방법 추가
+
+    @Lob
+    @Column(columnDefinition = "TEXT")
     private String cookingSteps; // JSON 형식의 조리 순서
 
     private String mainImageUrl; // 대표 사진 URL
@@ -45,6 +49,7 @@ public class Recipe {
     @Enumerated(EnumType.STRING)
     private RecipeDifficulty difficulty; // 난이도 (ENUM)
 
+    private String tags; //태그
     private int cookingTime; // 소요시간 (분 단위)
     private int servings; // 인원수
     private LocalDateTime createdAt; // 생성 일시

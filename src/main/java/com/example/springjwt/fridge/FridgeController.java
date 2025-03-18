@@ -1,8 +1,12 @@
 package com.example.springjwt.fridge;
 
+import com.example.springjwt.User.UserEntity;
+import com.example.springjwt.User.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,11 +17,18 @@ public class FridgeController {
 
     @Autowired
     private FridgeService fridgeService;
-
+    @Autowired
+    private UserRepository userRepository;
     // 냉장고 항목 추가 (POST)
     // 요청 본문에서 FridgeRequest DTO를 받아, 내부의 userId를 이용해 Fridge 엔티티 생성 후 저장
     @PostMapping
-    public ResponseEntity<Fridge> createFridge(@RequestBody FridgeRequestDTO fridgeRequest) {
+    public ResponseEntity<Fridge> createFridge(@AuthenticationPrincipal UserDetails userDetails,@RequestBody FridgeRequestDTO fridgeRequest) {
+        // 현재 로그인한 사용자의 username 가져오기
+        String username = userDetails.getUsername();
+
+        // username을 이용해 userId 조회 (UserRepository 활용)
+        UserEntity user = userRepository.findByUsername(username);
+
         // FridgeRequest DTO의 데이터를 Fridge 엔티티에 매핑
         Fridge fridge = new Fridge();
         fridge.setIngredientName(fridgeRequest.getIngredientName());
@@ -28,9 +39,9 @@ public class FridgeController {
         fridge.setPrice(fridgeRequest.getPrice());
         fridge.setUnitCategory(fridgeRequest.getUnitCategory());
         fridge.setUnitDetail(fridgeRequest.getUnitDetail());
-
+        long userId = (long) user.getId();
         // FridgeRequest에 포함된 userId를 사용해 서비스를 호출합니다.
-        Fridge createdFridge = fridgeService.createFridge(fridge, fridgeRequest.getUserId());
+        Fridge createdFridge = fridgeService.createFridge(fridge, userId);
         return new ResponseEntity<>(createdFridge, HttpStatus.CREATED);
     }
 

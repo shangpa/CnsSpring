@@ -25,6 +25,7 @@ public class RecipeDTO {
     private int servings;
     private LocalDateTime createdAt;
     private boolean isPublic;
+    private String writer;
 
     public static RecipeDTO fromEntity(Recipe recipe) {
         return RecipeDTO.builder()
@@ -42,6 +43,7 @@ public class RecipeDTO {
                 .servings(recipe.getServings())
                 .createdAt(recipe.getCreatedAt())
                 .isPublic(recipe.isPublic())
+                .writer(recipe.getUser().getUsername())
                 .build();
     }
 

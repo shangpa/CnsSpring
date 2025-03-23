@@ -97,7 +97,8 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
             response.setCharacterEncoding("UTF-8");
 
             try (PrintWriter out = response.getWriter()) {
-                out.print("{ \"message\": \"Login successful\", \"token\": \"" + token + "\" }");
+                int userId = customUserDetails.getUserEntity().getId();
+                out.print("{ \"message\": \"Login successful\", \"token\": \"" + token + "\", \"userId\": " + userId + " }");
                 out.flush();
             } catch (IOException ex) {
             throw new RuntimeException(ex);

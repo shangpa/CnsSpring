@@ -54,4 +54,5 @@ public class Recipe {
     private int servings; // 인원수
     private LocalDateTime createdAt; // 생성 일시
     private boolean isPublic; // 공개 여부
+    private String videoUrl;
 }

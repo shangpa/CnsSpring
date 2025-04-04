@@ -26,6 +26,7 @@ public class RecipeDTO {
     private LocalDateTime createdAt;
     private boolean isPublic;
     private String writer;
+    private String videoUrl;
 
     public static RecipeDTO fromEntity(Recipe recipe) {
         return RecipeDTO.builder()
@@ -44,6 +45,7 @@ public class RecipeDTO {
                 .createdAt(recipe.getCreatedAt())
                 .isPublic(recipe.isPublic())
                 .writer(recipe.getUser().getUsername())
+                .videoUrl(recipe.getVideoUrl())
                 .build();
     }
 
@@ -62,6 +64,7 @@ public class RecipeDTO {
                 .servings(this.servings)
                 .createdAt(this.createdAt != null ? this.createdAt : LocalDateTime.now())
                 .isPublic(this.isPublic)
+                .videoUrl(this.videoUrl)
                 .build();
     }
 }

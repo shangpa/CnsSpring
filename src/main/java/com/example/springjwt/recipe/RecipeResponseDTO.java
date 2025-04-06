@@ -12,3 +12,4 @@ public class RecipeResponseDTO {
     private String message;
     private Long recipeId;
 }
+

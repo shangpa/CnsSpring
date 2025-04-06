@@ -53,6 +53,13 @@ public class Recipe {
     private int cookingTime; // 소요시간 (분 단위)
     private int servings; // 인원수
     private LocalDateTime createdAt; // 생성 일시
-    private boolean isPublic; // 공개 여부
+    private boolean isPublic; // 공개
+
+    @Column(nullable = false)
+    private int viewCount = 0;
+
+    @Column(nullable = false)
+    private int likes = 0;
+
     private String videoUrl;
 }

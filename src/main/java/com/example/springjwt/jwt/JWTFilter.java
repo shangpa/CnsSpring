@@ -26,11 +26,13 @@ public class JWTFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String requestURI = request.getRequestURI();
-        // /uploads 경로는 JWT 검사 생략
-        if (requestURI.startsWith("/uploads")) {
+
+        // 인증 없이 접근 허용할 URI는 여기서 처리
+        if (requestURI.equals("/api/recipes/search") || requestURI.startsWith("/uploads")) {
             filterChain.doFilter(request, response);
             return;
         }
+
         // Authorization 헤더 읽기 및 로그 출력
         String authHeader = request.getHeader("Authorization");
         System.out.println("Received Authorization header: " + authHeader);

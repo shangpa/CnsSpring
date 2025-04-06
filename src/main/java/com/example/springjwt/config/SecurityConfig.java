@@ -42,7 +42,7 @@ public class SecurityConfig {
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login", "/", "/join","/uploads/**").permitAll()
+                        .requestMatchers("/login", "/", "/join","/uploads/**", "/api/recipes/public", "/api/recipes/public/**","/api/recipes/search", "/api/search/popular-keywords" ).permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(new JWTFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
                 .addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration), jwtUtil), UsernamePasswordAuthenticationFilter.class)

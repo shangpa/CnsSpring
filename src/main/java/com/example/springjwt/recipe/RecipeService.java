@@ -76,7 +76,7 @@ public class  RecipeService {
         existingRecipe.setDifficulty(RecipeDifficulty.valueOf(recipeDTO.getDifficulty()));
         existingRecipe.setCookingTime(recipeDTO.getCookingTime());
         existingRecipe.setServings(recipeDTO.getServings());
-        existingRecipe.setPublic(recipeDTO.isPublic());
+        existingRecipe.setPublic(recipeDTO.getIsPublic());
         return recipeRepository.save(existingRecipe);
     }
 

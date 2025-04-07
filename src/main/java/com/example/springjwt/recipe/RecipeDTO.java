@@ -1,6 +1,7 @@
 package com.example.springjwt.recipe;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -24,6 +25,7 @@ public class RecipeDTO {
     private int cookingTime;
     private int servings;
     private LocalDateTime createdAt;
+    @JsonProperty("isPublic")
     private boolean isPublic;
     private String writer;
     private String videoUrl;
@@ -66,5 +68,8 @@ public class RecipeDTO {
                 .isPublic(this.isPublic)
                 .videoUrl(this.videoUrl)
                 .build();
+    }
+    public boolean getIsPublic() {
+        return isPublic;
     }
 }

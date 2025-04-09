@@ -1,24 +1,28 @@
 package com.example.springjwt.review;
 
+import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
-
+@Builder
 @Getter
 public class ReviewResponseDTO {
     private Long reviewId;
     private String content;
     private int rating;
-    private String mediaUrl;
+    private String mediaUrls;
     private LocalDateTime createdAt;
     private String username; // 리뷰 작성자
 
-    public ReviewResponseDTO(Review review) {
-        this.reviewId = review.getReviewId();
-        this.content = review.getContent();
-        this.rating = review.getRating();
-        this.mediaUrl = review.getMediaUrl();
-        this.createdAt = review.getCreatedAt();
-        this.username = review.getUser().getUsername(); // 사용자 이름 반환
+    public static ReviewResponseDTO fromEntity(Review review) {
+        return ReviewResponseDTO.builder()
+                .reviewId(review.getReviewId())
+                .content(review.getContent())
+                .rating(review.getRating())
+                .mediaUrls(review.getMediaUrls())
+                .createdAt(review.getCreatedAt())
+                .username(review.getUser().getUsername())
+                .build();
     }
+
 }

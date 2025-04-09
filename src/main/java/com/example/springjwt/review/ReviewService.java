@@ -38,23 +38,18 @@ public class ReviewService {
         Recipe recipe = recipeRepository.findById(dto.getRecipeId())
                 .orElseThrow(() -> new IllegalArgumentException("해당 레시피가 없습니다."));
 
-        // 리뷰 저장
-        Review review = Review.builder()
-                .recipe(recipe)
-                .user(user)
-                .content(dto.getContent())
-                .rating(dto.getRating())
-                .mediaUrl(dto.getMediaUrl())
-                .build();
+        Review review = dto.toEntity(user, recipe);
 
         reviewRepository.save(review);
-        return new ReviewResponseDTO(review);
+        return ReviewResponseDTO.fromEntity(review);
     }
 
     // 특정 레시피의 리뷰 조회
     @Transactional(readOnly = true)
     public List<ReviewResponseDTO> getReviewsByRecipe(Long recipeId) {
         List<Review> reviews = reviewRepository.findByRecipe_RecipeId(recipeId);
-        return reviews.stream().map(ReviewResponseDTO::new).collect(Collectors.toList());
+        return reviews.stream()
+                .map(ReviewResponseDTO::fromEntity)
+                .collect(Collectors.toList());
     }
 }

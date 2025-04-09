@@ -20,6 +20,7 @@ public class TradePostDTO {
     private LocalDate purchaseDate; // 구매 날짜
     private String description;     // 설명
     private String location;        // 거래 희망 장소 (추후 사용)
+    private String imageUrls;       // 이미지 URL 목록 (JSON 문자열)
 
     // DTO → Entity (User는 외부에서 주입)
     public TradePost toEntity() {
@@ -31,6 +32,7 @@ public class TradePostDTO {
                 .purchaseDate(purchaseDate)
                 .description(description)
                 .location(location)
+                .imageUrls(imageUrls)
                 .build();
     }
 
@@ -46,6 +48,7 @@ public class TradePostDTO {
                 .purchaseDate(tradePost.getPurchaseDate())
                 .description(tradePost.getDescription())
                 .location(tradePost.getLocation())
+                .imageUrls(tradePost.getImageUrls())
                 .build();
     }
 }

@@ -36,5 +36,10 @@ public class TradePost {
     @Column(length = 1000)
     private String description;
 
+    @Lob
+    @Column(columnDefinition = "TEXT")
+    private String imageUrls; // JSON 형식의 이미지 URL 리스트
+
     private String location; // 거래 희망 장소 (추후 지도 기능 연동)
+
 }

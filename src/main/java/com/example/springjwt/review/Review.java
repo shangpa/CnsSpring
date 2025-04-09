@@ -34,7 +34,9 @@ public class Review {
     @Column(nullable = false)
     private int rating; // 별점 (1~5)
 
-    private String mediaUrl; // 이미지 URL (선택사항)
+    @Lob
+    @Column(columnDefinition = "TEXT")
+    private String mediaUrls; // 이미지 URL 리스트 (JSON 형식 문자열)
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt; // 작성일시

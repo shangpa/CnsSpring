@@ -18,4 +18,10 @@ public class TradePostService {
         tradePost.setUser(user); // 작성자 주입
         return tradePostRepository.save(tradePost);
     }
+
+    public TradePostDTO getTradePostById(Long id) {
+        TradePost tradePost = tradePostRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("해당 거래글이 존재하지 않습니다. ID=" + id));
+        return TradePostDTO.fromEntity(tradePost);
+    }
 }

@@ -13,5 +13,5 @@ public interface LikeRecipeRepository extends JpaRepository<LikeRecipe, Long> {
     List<LikeRecipe> findByUser(UserEntity user);
     Long countByRecipe(Recipe recipe);
 
-    void delete(Optional<LikeRecipe> existing);
+    void delete(LikeRecipe likeRecipe);
 }

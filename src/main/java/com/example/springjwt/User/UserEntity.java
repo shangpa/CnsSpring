@@ -1,9 +1,6 @@
 package com.example.springjwt.User;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -21,4 +18,8 @@ public class UserEntity {
     private String password;
 
     private String role;
+    @Column(nullable = false)
+    private int point = 0; // 기본값 0
+    @Column(nullable = false)
+    private int fridgePointStep = 0;
 }

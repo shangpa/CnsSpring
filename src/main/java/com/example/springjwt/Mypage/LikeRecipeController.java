@@ -2,6 +2,8 @@ package com.example.springjwt.Mypage;
 
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
+import com.example.springjwt.point.PointActionType;
+import com.example.springjwt.point.PointService;
 import com.example.springjwt.recipe.Recipe;
 import com.example.springjwt.recipe.RecipeDTO;
 import com.example.springjwt.recipe.RecipeRepository;
@@ -24,6 +26,7 @@ public class LikeRecipeController {
     private final RecipeRepository recipeRepository;
     private final LikeRecipeRepository likeRecipeRepository;
     private final UserRepository userRepository;
+    private final PointService pointService;
 
     @PostMapping("/{recipeId}/like-toggle")
     public ResponseEntity<String> toggleLikeRecipe(
@@ -48,6 +51,29 @@ public class LikeRecipeController {
         like.setRecipe(recipe);
         like.setLikedAt(LocalDateTime.now());
         likeRecipeRepository.save(like);
+
+        // 좋아요 수 증가
+        recipe.setLikes(recipe.getLikes() + 1);
+
+        // ✅ 포인트 적립 체크
+        int newStep = recipe.getLikes() / 10;
+        int prevStep = recipe.getLikePointStep();
+
+        if (newStep > prevStep) {
+            int diff = newStep - prevStep;
+
+            // 레시피 작성자에게 포인트 지급
+            pointService.addPoint(
+                    recipe.getUser(),
+                    PointActionType.RECIPE_LIKE_RECEIVED,
+                    diff * 10,
+                    "레시피 좋아요 누적 " + recipe.getLikes() + "개 돌파"
+            );
+
+            recipe.setLikePointStep(newStep);
+        }
+
+        recipeRepository.save(recipe);
 
         return ResponseEntity.ok("좋아요 추가됨");
     }

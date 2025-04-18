@@ -1,0 +1,12 @@
+package com.example.springjwt.point;
+
+public enum PointActionType {
+    RECIPE_WRITE,
+    COMMUNITY_POST,
+    COMMUNITY_COMMENT,
+    COMMUNITY_LIKE_RECEIVED,
+    RECIPE_LIKE_RECEIVED,
+    RECIPE_SCRAP_RECEIVED,
+    BEST_RECIPE_SELECTED,
+    FRIDGE_INPUT
+}

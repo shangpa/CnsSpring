@@ -2,6 +2,8 @@ package com.example.springjwt.fridge;
 
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
+import com.example.springjwt.point.PointActionType;
+import com.example.springjwt.point.PointService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,8 @@ public class FridgeService {
 
     @Autowired
     private UserRepository userRepository; // UserEntity 조회를 위한 Repository
+    @Autowired
+    private  PointService pointService;
 
     // 냉장고 항목 추가 (userId를 추가 인자로 받음)
     public Fridge createFridge(Fridge fridge, Long userId) {
@@ -26,7 +30,26 @@ public class FridgeService {
         fridge.setUser(user);
         fridge.setCreatedAt(LocalDateTime.now());
         fridge.setUpdatedAt(LocalDateTime.now());
-        return fridgeRepository.save(fridge);
+        fridgeRepository.save(fridge);
+
+        // 포인트 적립 체크
+        long totalCount = fridgeRepository.countByUser(user);
+        int newStep = (int) (totalCount / 10);
+        int prevStep = user.getFridgePointStep();
+
+        if (newStep > prevStep) {
+            int diff = newStep - prevStep;
+            pointService.addPoint(
+                    user,
+                    PointActionType.FRIDGE_INPUT,
+                    diff * 10,
+                    "냉장고 재료 누적 " + totalCount + "개 등록"
+            );
+
+            user.setFridgePointStep(newStep);
+            userRepository.save(user);
+        }
+        return fridge;
     }
 
     // 로그인한 사용자의 냉장고 항목 조회

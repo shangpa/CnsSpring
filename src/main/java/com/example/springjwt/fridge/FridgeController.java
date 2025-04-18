@@ -76,11 +76,10 @@ public class FridgeController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteFridge(@PathVariable Long id, @RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<Void> deleteFridge(@PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) {
         System.out.println("authorization now");
 
-        String token = authHeader.substring(7); // "Bearer " 제거
-        String username = jwtUtil.getUsername(token);
+        String username = userDetails.getUsername();
         UserEntity user = userRepository.findOptionalByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
 

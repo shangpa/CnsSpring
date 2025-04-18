@@ -2,6 +2,8 @@ package com.example.springjwt.recipe;
 
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
+import com.example.springjwt.point.PointActionType;
+import com.example.springjwt.point.PointService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,7 +17,7 @@ public class  RecipeService {
 
     private final RecipeRepository recipeRepository;
     private final UserRepository userRepository;
-
+    private final PointService pointService;
     // 전체 레시피 조회
     public List<Recipe> getAllRecipes() {
         return recipeRepository.findAll();
@@ -61,6 +63,12 @@ public class  RecipeService {
         Recipe recipe = recipeDTO.toEntity();
         System.out.println("로그인 된 유저 :"+user.getUsername());
         recipe.setUser(user); // 로그인한 유저를 레시피 작성자로 설정
+        pointService.addPoint(
+                user,
+                PointActionType.RECIPE_WRITE,
+                1,
+                "레시피 작성 포인트 10점 적립"
+        );
         return recipeRepository.save(recipe);
     }
 

@@ -21,17 +21,26 @@ public class JWTUtil {
     }
 
     public String getUsername(String token) {
-
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+        token = token.trim(); //공백 완벽 제거
         return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get("username", String.class);
     }
 
     public String getRole(String token) {
-
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+        token = token.trim();
         return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get("role", String.class);
     }
 
     public Boolean isExpired(String token) {
-
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+        token = token.trim();
         return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().getExpiration().before(new Date());
     }
 

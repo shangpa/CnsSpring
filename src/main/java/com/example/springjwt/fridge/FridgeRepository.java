@@ -7,5 +7,5 @@ import java.util.List;
 public interface FridgeRepository extends JpaRepository<Fridge, Long> {
     //조회기준
     List<Fridge> findByUserIdOrderByUpdatedAtDesc(Long userId);
-
+    long countByUser(UserEntity user);
 }

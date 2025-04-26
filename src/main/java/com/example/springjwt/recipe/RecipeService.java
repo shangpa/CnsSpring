@@ -53,8 +53,11 @@ public class  RecipeService {
 
     // 특정 레시피 조회
     public Recipe getRecipeById(Long id) {
-        return recipeRepository.findById(id)
+        Recipe recipe = recipeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("레시피를 찾을 수 없습니다: " + id));
+        recipe.setViewCount(recipe.getViewCount() + 1); // 조회수 1 증가
+        recipeRepository.save(recipe); // 저장
+        return recipe;
     }
 
     // 레시피 생성

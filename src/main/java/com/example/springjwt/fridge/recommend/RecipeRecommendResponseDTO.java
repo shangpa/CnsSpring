@@ -14,4 +14,7 @@ public class RecipeRecommendResponseDTO {
     private double reviewAverage;
     private int reviewCount;
     private String writerNickname;
+    private int viewCount;
+    private int likeCount;
+    private String createdAt;
 }

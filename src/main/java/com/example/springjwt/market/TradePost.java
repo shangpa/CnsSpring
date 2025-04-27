@@ -1,10 +1,13 @@
 package com.example.springjwt.market;
 
 import com.example.springjwt.User.UserEntity;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 @Table(name = "trade_post")
@@ -46,4 +49,23 @@ public class TradePost {
     private String location; // 거래 희망 장소 (추후 지도 기능 연동)
     @Column(nullable = false)
     private int status = STATUS_ONGOING;  // 기본값 0, 거래중
+
+    public String extractFirstImageUrl() {
+        if (this.imageUrls == null || this.imageUrls.isEmpty()) {
+            return null; // 이미지가 없으면 null 반환
+        }
+        try {
+            // 이미지 URL들을 JSON 문자열로 저장했으니까 파싱해줘야 함
+            ObjectMapper objectMapper = new ObjectMapper();
+            List<String> urls = objectMapper.readValue(this.imageUrls, new TypeReference<List<String>>() {});
+
+            if (urls.isEmpty()) {
+                return null;
+            }
+            return urls.get(0); // 첫 번째 이미지 반환
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 }

@@ -42,7 +42,6 @@ public class FridgeController {
         fridge.setFridgeDate(fridgeRequest.getFridgeDate());
         fridge.setDateOption(fridgeRequest.getDateOption());
         fridge.setQuantity(fridgeRequest.getQuantity());
-        fridge.setPrice(fridgeRequest.getPrice());
         fridge.setUnitCategory(fridgeRequest.getUnitCategory());
         fridge.setUnitDetail(fridgeRequest.getUnitDetail());
         long userId = (long) user.getId();

@@ -78,7 +78,6 @@ public class FridgeService {
         fridge.setFridgeDate(request.getFridgeDate());
         fridge.setDateOption(request.getDateOption());
         fridge.setQuantity(request.getQuantity());
-        fridge.setPrice(request.getPrice());
         fridge.setUnitCategory(request.getUnitCategory());
         fridge.setUnitDetail(request.getUnitDetail());
         fridge.setUpdatedAt(LocalDateTime.now());

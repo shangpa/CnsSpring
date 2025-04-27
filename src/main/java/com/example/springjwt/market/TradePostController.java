@@ -6,6 +6,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/trade-posts")
 @RequiredArgsConstructor
@@ -25,5 +27,21 @@ public class TradePostController {
     public ResponseEntity<TradePostDTO> getTradePostById(@PathVariable Long id,@AuthenticationPrincipal UserDetails userDetails) {
         TradePostDTO tradePostDTO = tradePostService.getTradePostById(id);
         return ResponseEntity.ok(tradePostDTO);
+    }
+
+    // 거래 완료 처리
+    @PatchMapping("/{id}/complete")
+    public ResponseEntity<TradePostDTO> completeTradePost(@PathVariable Long id) {
+        TradePost completedPost = tradePostService.completeTradePost(id);
+        return ResponseEntity.ok(TradePostDTO.fromEntity(completedPost));
+    }
+
+    // ✅ 내가 작성한 거래글 조회
+    @GetMapping("/my-posts")
+    public ResponseEntity<List<TradePostSimpleResponseDTO>> getMyTradePosts(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        List<TradePostSimpleResponseDTO> myPosts = tradePostService.getMyTradePosts(userDetails.getUsername());
+        return ResponseEntity.ok(myPosts);
     }
 }

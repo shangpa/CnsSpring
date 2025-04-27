@@ -16,6 +16,7 @@ public class TradePostService {
         UserEntity user = userRepository.findByUsername(username);
         TradePost tradePost = dto.toEntity();
         tradePost.setUser(user); // 작성자 주입
+        tradePost.setStatus(0);
         return tradePostRepository.save(tradePost);
     }
 

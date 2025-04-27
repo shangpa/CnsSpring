@@ -24,4 +24,10 @@ public class TradePostService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 거래글이 존재하지 않습니다. ID=" + id));
         return TradePostDTO.fromEntity(tradePost);
     }
+    public TradePost completeTradePost(Long id) {
+        TradePost tradePost = tradePostRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("해당 거래글이 존재하지 않습니다. ID=" + id));
+        tradePost.setStatus(TradePost.STATUS_COMPLETED); // 거래 완료
+        return tradePostRepository.save(tradePost);
+    }
 }

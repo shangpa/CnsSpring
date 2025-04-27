@@ -26,4 +26,11 @@ public class TradePostController {
         TradePostDTO tradePostDTO = tradePostService.getTradePostById(id);
         return ResponseEntity.ok(tradePostDTO);
     }
+
+    // 거래 완료 처리
+    @PatchMapping("/{id}/complete")
+    public ResponseEntity<TradePostDTO> completeTradePost(@PathVariable Long id) {
+        TradePost completedPost = tradePostService.completeTradePost(id);
+        return ResponseEntity.ok(TradePostDTO.fromEntity(completedPost));
+    }
 }

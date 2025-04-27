@@ -36,7 +36,7 @@ public class TradePostController {
         return ResponseEntity.ok(TradePostDTO.fromEntity(completedPost));
     }
 
-    // ✅ 내가 작성한 거래글 조회
+    // 내가 작성한 거래글 조회
     @GetMapping("/my-posts")
     public ResponseEntity<List<TradePostSimpleResponseDTO>> getMyTradePosts(
             @AuthenticationPrincipal UserDetails userDetails
@@ -44,4 +44,27 @@ public class TradePostController {
         List<TradePostSimpleResponseDTO> myPosts = tradePostService.getMyTradePosts(userDetails.getUsername());
         return ResponseEntity.ok(myPosts);
     }
+
+    // 거래글 불러오기(메인에서 조회)
+    @GetMapping
+    public ResponseEntity<List<TradePostDTO>> getAllTradePosts() {
+        List<TradePostDTO> tradePosts = tradePostService.getAllTradePosts();
+        return ResponseEntity.ok(tradePosts);
+    }
+
+    //거래글 카테고리 필터링
+    @GetMapping("/category")
+    public ResponseEntity<List<TradePostDTO>> getTradePostsByCategory(@RequestParam("category") String category) {
+        List<TradePostDTO> tradePosts = tradePostService.getTradePostsByCategory(category);
+        return ResponseEntity.ok(tradePosts);
+    }
+
+    // 거래글 검색
+    @GetMapping("/search")
+    public ResponseEntity<List<TradePostDTO>> searchTradePosts(
+            @RequestParam("keyword") String keyword) {
+        List<TradePostDTO> result = tradePostService.searchTradePosts(keyword);
+        return ResponseEntity.ok(result);
+    }
+
 }

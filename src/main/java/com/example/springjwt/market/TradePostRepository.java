@@ -9,4 +9,8 @@ import java.util.List;
 @Repository
 public interface TradePostRepository extends JpaRepository<TradePost, Long> {
     List<TradePost> findByUser(UserEntity user);
+    //카테고리
+    List<TradePost> findByCategory(String category);
+    //검색
+    List<TradePost> findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(String titleKeyword, String descriptionKeyword);
 }

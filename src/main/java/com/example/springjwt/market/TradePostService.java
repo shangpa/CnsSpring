@@ -46,4 +46,27 @@ public class TradePostService {
                 .map(TradePostSimpleResponseDTO::fromEntity)
                 .collect(Collectors.toList());
     }
+
+    public List<TradePostDTO> getAllTradePosts() {
+        List<TradePost> tradePosts = tradePostRepository.findAll();
+        return tradePosts.stream()
+                .map(TradePostDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    public List<TradePostDTO> getTradePostsByCategory(String category) {
+        List<TradePost> tradePosts = tradePostRepository.findByCategory(category);
+        return tradePosts.stream()
+                .map(TradePostDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    public List<TradePostDTO> searchTradePosts(String keyword) {
+        List<TradePost> tradePosts = tradePostRepository
+                .findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(keyword, keyword);
+
+        return tradePosts.stream()
+                .map(TradePostDTO::fromEntity)  // DTO 변환
+                .collect(Collectors.toList());
+    }
 }

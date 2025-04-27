@@ -20,14 +20,14 @@ public class TradePost {
 
     public static final int STATUS_ONGOING = 0; //거래중
     public static final int STATUS_COMPLETED = 1; //거래완료
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long tradePostId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private UserEntity user;  // 작성자 (외래 키)
+    private UserEntity user;
 
     private String category;
 
@@ -44,9 +44,9 @@ public class TradePost {
 
     @Lob
     @Column(columnDefinition = "TEXT")
-    private String imageUrls; // JSON 형식의 이미지 URL 리스트
+    private String imageUrls;
 
-    private String location; // 거래 희망 장소 (추후 지도 기능 연동)
+    private String location;
     @Column(nullable = false)
     private int status = STATUS_ONGOING;  // 기본값 0, 거래중
 
@@ -67,5 +67,13 @@ public class TradePost {
             e.printStackTrace();
             return null;
         }
+    }
+
+    @Column(name = "createdAt", nullable = false, updatable = false)
+    private java.time.LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = java.time.LocalDateTime.now();
     }
 }

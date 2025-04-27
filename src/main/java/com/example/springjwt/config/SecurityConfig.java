@@ -42,13 +42,19 @@ public class SecurityConfig {
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login", "/", "/join","/uploads/**", "/api/recipes/public", "/api/recipes/public/**","/api/recipes/search", "/api/search/popular-keywords" ).permitAll()
-                        .anyRequest().authenticated())
+                        .requestMatchers(
+                                "/login", "/", "/join",
+                                "/uploads/**",
+                                "/api/recipes/public", "/api/recipes/public/**",
+                                "/api/recipes/search", "/api/search/popular-keywords",
+                                "/api/trade-posts", "/api/trade-posts/**"
+                        ).permitAll()
+                        .anyRequest().authenticated()
+                )
                 .addFilterBefore(new JWTFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
                 .addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration), jwtUtil), UsernamePasswordAuthenticationFilter.class)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         return http.build();
     }
-
 }

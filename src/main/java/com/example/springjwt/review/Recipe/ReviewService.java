@@ -1,4 +1,4 @@
-package com.example.springjwt.review;
+package com.example.springjwt.review.Recipe;
 
 
 import com.example.springjwt.User.UserEntity;

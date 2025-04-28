@@ -2,8 +2,10 @@ package com.example.springjwt.point;
 
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
+import com.example.springjwt.dto.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -48,5 +50,17 @@ public class PointController {
     public ResponseEntity<List<PointHistory>> getPointHistory(@PathVariable int id) {
         List<PointHistory> history = pointService.getHistory(id);
         return ResponseEntity.ok(history);
+    }
+    @GetMapping("/my-point")
+    public ResponseEntity<Integer> getMyPoint(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        String username = userDetails.getUsername();
+        System.out.println("로그인한 유저네임 = " + username);
+
+        UserEntity realTimeUser = userRepository.findByUsername(username);
+
+        if (realTimeUser == null) {
+            throw new IllegalArgumentException("유저를 찾을 수 없습니다.");
+        }
+        return ResponseEntity.ok(realTimeUser.getPoint());
     }
 }

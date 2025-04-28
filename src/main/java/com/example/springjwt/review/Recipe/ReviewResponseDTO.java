@@ -1,4 +1,4 @@
-package com.example.springjwt.review;
+package com.example.springjwt.review.Recipe;
 
 import lombok.Builder;
 import lombok.Getter;

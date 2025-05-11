@@ -28,7 +28,12 @@ public class JWTFilter extends OncePerRequestFilter {
         String requestURI = request.getRequestURI();
 
         // 인증 없이 접근 허용할 URI는 여기서 처리
-        if (requestURI.equals("/api/recipes/search") || requestURI.startsWith("/uploads")) {
+        if (
+                requestURI.equals("/join") ||
+                        requestURI.equals("/login") ||
+                        requestURI.equals("/api/recipes/search") ||
+                        requestURI.startsWith("/uploads")
+        ) {
             filterChain.doFilter(request, response);
             return;
         }

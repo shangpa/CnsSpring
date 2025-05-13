@@ -16,7 +16,7 @@ public class PointService {
     private final PointHistoryRepository pointHistoryRepository;
     private final PointPolicy pointPolicy;
 
-    // ✅ 1. 포인트 적립
+    // 포인트 적립
     public void addPoint(UserEntity user, PointActionType action, int count, String description) {
         int point = pointPolicy.calculatePoint(action, count);
 
@@ -36,7 +36,7 @@ public class PointService {
         pointHistoryRepository.save(history);
     }
 
-    // ✅ 2. 포인트 사용 (차감)
+    // 포인트 사용 (차감)
     public void usePoint(UserEntity user, int amount, String description) {
         if (user.getPoint() < amount) {
             throw new IllegalArgumentException("보유 포인트가 부족합니다.");
@@ -56,7 +56,7 @@ public class PointService {
         pointHistoryRepository.save(history);
     }
 
-    // ✅ 3. 포인트 이력 조회
+    // 포인트 이력 조회
     public List<PointHistory> getHistory(int userId) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));

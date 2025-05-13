@@ -3,6 +3,10 @@ package com.example.springjwt.board;
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,11 +37,13 @@ public class BoardController {
         return ResponseEntity.ok(boardRepository.save(board));
     }
 
-    //조회수랑 추천수 기준 정렬
+    //좋아요순 기준
     @GetMapping("/popular")
-    public List<Board> getPopularBoards() {
-        // 조회수 + 저장수 상위 (정렬 기준 커스터마이징 가능)
-        return boardRepository.findTop10ByOrderByViewCountDesc();
+    public ResponseEntity<List<Board>> getPopularBoards() {
+        List<BoardType> types = List.of(BoardType.COOKING, BoardType.FREE);
+        Pageable pageable = PageRequest.of(0, 10); // 상위 10개만
+        List<Board> boards = boardRepository.findPopularBoards(types, pageable);
+        return ResponseEntity.ok(boards);
     }
 
     //타입별 정렬
@@ -89,6 +95,31 @@ public class BoardController {
     @GetMapping("/{id}/comments")
     public ResponseEntity<List<BoardComment>> getComments(@PathVariable Long id) {
         return ResponseEntity.ok(boardCommentRepository.findByBoardIdOrderByCreatedAtAsc(id));
+    }
+
+    @GetMapping("/{type}")
+    public ResponseEntity<List<Board>> getBoardsByType(
+            @PathVariable String type,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "latest") String sort) {
+
+        BoardType boardType = BoardType.valueOf(type.toUpperCase());
+        Pageable pageable;
+
+        switch (sort) {
+            case "like":
+                pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "likeCount"));
+                break;
+            case "comment":
+                pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "commentCount"));
+                break;
+            default:
+                pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        }
+
+        Page<Board> boardPage = boardRepository.findByBoardType(boardType, pageable);
+        return ResponseEntity.ok(boardPage.getContent());
     }
 
 }

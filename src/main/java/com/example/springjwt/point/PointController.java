@@ -18,7 +18,7 @@ public class PointController {
     private final PointService pointService;
     private final UserRepository userRepository;
 
-    // ✅ 1. 포인트 적립 (테스트용)
+    //포인트 적립 (테스트용)
     @PostMapping("/add")
     public ResponseEntity<String> addPoint(
             @RequestParam int userId,
@@ -32,7 +32,7 @@ public class PointController {
         return ResponseEntity.ok("포인트가 적립되었습니다.");
     }
 
-    // ✅ 2. 포인트 차감 (테스트용)
+    // 포인트 차감 (테스트용)
     @PostMapping("/use")
     public ResponseEntity<String> usePoint(
             @RequestParam int userId,
@@ -45,12 +45,13 @@ public class PointController {
         return ResponseEntity.ok("포인트가 차감되었습니다.");
     }
 
-    // ✅ 3. 유저 포인트 이력 조회
+    //유저 포인트 이력 조회
     @GetMapping("/user/{id}/history")
     public ResponseEntity<List<PointHistory>> getPointHistory(@PathVariable int id) {
         List<PointHistory> history = pointService.getHistory(id);
         return ResponseEntity.ok(history);
     }
+    //남은 포인트 조회
     @GetMapping("/my-point")
     public ResponseEntity<Integer> getMyPoint(@AuthenticationPrincipal CustomUserDetails userDetails) {
         String username = userDetails.getUsername();

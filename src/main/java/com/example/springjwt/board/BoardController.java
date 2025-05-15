@@ -65,7 +65,8 @@ public class BoardController {
         like.setBoard(board);
         boardLikeRepository.save(like);
 
-        board.setLikeCount(board.getLikeCount() + 1);
+        int count = (int) boardLikeRepository.countByBoard(board);
+        board.setLikeCount(count);
         boardRepository.save(board);
 
         return ResponseEntity.ok("추천 완료");
@@ -119,6 +120,40 @@ public class BoardController {
 
         Page<Board> boardPage = boardRepository.findByBoardType(boardType, pageable);
         return ResponseEntity.ok(boardPage.getContent());
+    }
+
+    //특정 id 조회
+    @GetMapping("/{id}/detail")
+    public ResponseEntity<BoardDetailResponseDTO> getBoardDetail(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        BoardDetailResponseDTO detail = boardService.getBoardDetail(id, userDetails.getUsername());
+        return ResponseEntity.ok(detail);
+    }
+
+    //댓글 개수랑 댓글 조회
+    @GetMapping("/{id}/commentsWithC")
+    public ResponseEntity<?> getCommentsWithC(@PathVariable Long id,@AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        List<BoardComment> comments = boardCommentRepository.findByBoardIdOrderByCreatedAtAsc(id);
+
+        List<CommentResponseDTO> dtoList = comments.stream()
+                .map(c -> new CommentResponseDTO(
+                        c.getUser().getUsername(),
+                        c.getContent(),
+                        c.getCreatedAt().toString()
+                ))
+                .toList();
+
+        return ResponseEntity.ok(new CommentListWithCountDTO(dtoList, dtoList.size()));
     }
 
 }

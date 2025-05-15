@@ -17,4 +17,7 @@ public class BoardDetailResponseDTO {
     private String boardType;
     private String createdAt;
     private int likeCount;
+    private boolean liked;
+
+
 }

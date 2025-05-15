@@ -45,12 +45,7 @@ public class BoardController {
         List<Board> boards = boardRepository.findPopularBoards(types, pageable);
         return ResponseEntity.ok(boards);
     }
-
-    //타입별 정렬
-    @GetMapping("/{type}")
-    public List<Board> getBoardsByType(@PathVariable String type) {
-        return boardRepository.findByBoardType(BoardType.valueOf(type.toUpperCase()));
-    }
+    
 
     //좋아요 기능
     @PostMapping("/{id}/like")
@@ -97,6 +92,7 @@ public class BoardController {
         return ResponseEntity.ok(boardCommentRepository.findByBoardIdOrderByCreatedAtAsc(id));
     }
 
+    //타입별 페이징
     @GetMapping("/{type}")
     public ResponseEntity<List<Board>> getBoardsByType(
             @PathVariable String type,

@@ -8,6 +8,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -22,19 +24,15 @@ public class BoardController {
     private final UserRepository userRepository;
     private final BoardLikeRepository boardLikeRepository;
     private final BoardCommentRepository boardCommentRepository;
+    private final BoardService boardService;
 
     //커뮤니티 게시글 작성
     @PostMapping
-    public ResponseEntity<?> createBoard(@RequestBody BoardRequestDTO dto, Principal principal) {
-        UserEntity user = userRepository.findByUsername(principal.getName());
-
-        Board board = new Board();
-        board.setWriter(user);
-        board.setContent(dto.getContent());
-        board.setImageUrls(dto.getImageUrls());
-        board.setBoardType(dto.getBoardType());
-
-        return ResponseEntity.ok(boardRepository.save(board));
+    public ResponseEntity<BoardResponseDTO> createBoard(@RequestBody BoardRequestDTO dto,
+                                                        @AuthenticationPrincipal UserDetails userDetails) {
+        System.out.println("userDetails: " + userDetails);
+        BoardResponseDTO response = boardService.create(dto, userDetails.getUsername());
+        return ResponseEntity.ok(response);
     }
 
     //좋아요순 기준
@@ -45,12 +43,12 @@ public class BoardController {
         List<Board> boards = boardRepository.findPopularBoards(types, pageable);
         return ResponseEntity.ok(boards);
     }
-    
+
 
     //좋아요 기능
     @PostMapping("/{id}/like")
-    public ResponseEntity<?> likeBoard(@PathVariable Long id, Principal principal) {
-        UserEntity user = userRepository.findByUsername(principal.getName());
+    public ResponseEntity<?> likeBoard(@PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) {
+        UserEntity user = userRepository.findByUsername(userDetails.getUsername());
         Board board = boardRepository.findById(id).orElseThrow();
 
         if (boardLikeRepository.existsByUserAndBoard(user, board)) {
@@ -72,8 +70,8 @@ public class BoardController {
     @PostMapping("/{id}/comment")
     public ResponseEntity<?> addComment(@PathVariable Long id,
                                         @RequestBody CommentRequestDTO dto,
-                                        Principal principal) {
-        UserEntity user = userRepository.findByUsername(principal.getName());
+                                        @AuthenticationPrincipal UserDetails userDetails) {
+        UserEntity user = userRepository.findByUsername(userDetails.getUsername());
         Board board = boardRepository.findById(id).orElseThrow();
 
         BoardComment comment = new BoardComment();

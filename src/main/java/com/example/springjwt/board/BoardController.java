@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -37,11 +38,15 @@ public class BoardController {
 
     //좋아요순 기준
     @GetMapping("/popular")
-    public ResponseEntity<List<Board>> getPopularBoards() {
-        List<BoardType> types = List.of(BoardType.COOKING, BoardType.FREE);
-        Pageable pageable = PageRequest.of(0, 10); // 상위 10개만
-        List<Board> boards = boardRepository.findPopularBoards(types, pageable);
-        return ResponseEntity.ok(boards);
+    public ResponseEntity<List<BoardDetailResponseDTO>> getPopularBoards(
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        List<BoardDetailResponseDTO> response = boardService.getPopularBoards();
+        return ResponseEntity.ok(response);
     }
 
 

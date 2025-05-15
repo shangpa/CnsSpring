@@ -18,7 +18,7 @@ public class PointHistory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // ✅ UserEntity 직접 조인
+    //UserEntity 조인
     @ManyToOne(fetch = FetchType.LAZY)
     private UserEntity user;
 

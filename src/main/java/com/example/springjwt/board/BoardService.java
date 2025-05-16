@@ -48,7 +48,8 @@ public class BoardService {
                 board.getBoardType().name(),
                 board.getCreatedAt().toString(),
                 (int) boardLikeRepository.countByBoard(board),
-                false
+                false,
+                board.getCommentCount()
         )).toList();
     }
 
@@ -67,7 +68,8 @@ public class BoardService {
                 board.getBoardType().toString(),
                 board.getCreatedAt().toString(),
                 board.getLikeCount(),
-                liked
+                liked,
+                board.getCommentCount()
         );
     }
 
@@ -107,7 +109,19 @@ public class BoardService {
                 board.getBoardType().toString(),
                 board.getCreatedAt().toString(),
                 board.getLikeCount(),
-                liked
+                liked,
+                board.getCommentCount()
         );
+    }
+
+    public List<BoardDetailResponseDTO> getBoardsByTypePaged(BoardType type, String sort, int page, int size, String username) {
+        Sort sorting = switch (sort) {
+            case "like" -> Sort.by(Sort.Direction.DESC, "likeCount");
+            case "comment" -> Sort.by(Sort.Direction.DESC, "commentCount");
+            default -> Sort.by(Sort.Direction.DESC, "createdAt");
+        };
+        Pageable pageable = PageRequest.of(page, size, sorting);
+        List<Board> boards = boardRepository.findByBoardType(type, pageable).getContent();
+        return boards.stream().map(b -> toDetailDTO(b, username)).toList();
     }
 }

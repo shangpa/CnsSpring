@@ -102,7 +102,8 @@ public class BoardController {
         comment.setContent(dto.getContent());
 
         boardCommentRepository.save(comment);
-
+        board.setCommentCount(board.getCommentCount() + 1);
+        boardRepository.save(board);
         return ResponseEntity.ok("댓글 등록 완료");
     }
 
@@ -114,7 +115,7 @@ public class BoardController {
 
     //타입별 페이징
     @GetMapping("/{type}")
-    public ResponseEntity<List<Board>> getBoardsByType(
+    public ResponseEntity<List<BoardDetailResponseDTO>> getBoardsByType(
             @PathVariable String type,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -126,21 +127,8 @@ public class BoardController {
         }
 
         BoardType boardType = BoardType.valueOf(type.toUpperCase());
-        Pageable pageable;
-
-        switch (sort) {
-            case "like":
-                pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "likeCount"));
-                break;
-            case "comment":
-                pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "commentCount"));
-                break;
-            default:
-                pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        }
-
-        Page<Board> boardPage = boardRepository.findByBoardType(boardType, pageable);
-        return ResponseEntity.ok(boardPage.getContent());
+        List<BoardDetailResponseDTO> dtos = boardService.getBoardsByTypePaged(boardType, sort, page, size, userDetails.getUsername());
+        return ResponseEntity.ok(dtos);
     }
 
     //특정 id 조회

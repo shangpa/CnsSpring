@@ -18,6 +18,6 @@ public class BoardDetailResponseDTO {
     private String createdAt;
     private int likeCount;
     private boolean liked;
-
+    private int commentCount;
 
 }

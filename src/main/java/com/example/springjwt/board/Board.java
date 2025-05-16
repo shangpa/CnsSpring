@@ -35,4 +35,7 @@ public class Board {
 
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<BoardComment> comments = new ArrayList<>();
+
+    @Column(nullable = false)
+    private int commentCount = 0;
 }

@@ -35,6 +35,22 @@ public class BoardController {
         BoardResponseDTO response = boardService.create(dto, userDetails.getUsername());
         return ResponseEntity.ok(response);
     }
+    //메인 기준
+    @GetMapping("/main")
+    public ResponseEntity<BoardMainDTO> getCommunityMain(@AuthenticationPrincipal UserDetails userDetails) {
+        String username = userDetails != null ? userDetails.getUsername() : null;
+
+        List<BoardDetailResponseDTO> popular = boardService.getPopularBoards(3, username);
+        List<BoardDetailResponseDTO> free = boardService.getBoardsByTypeAndSort(BoardType.FREE, "latest", 3, username);
+        List<BoardDetailResponseDTO> cook = boardService.getBoardsByTypeAndSort(BoardType.COOKING, "latest", 3, username);
+
+        BoardMainDTO result = new BoardMainDTO();
+        result.setPopularBoards(popular);
+        result.setFreeBoards(free);
+        result.setCookBoards(cook);
+
+        return ResponseEntity.ok(result);
+    }
 
     //좋아요순 기준
     @GetMapping("/popular")
@@ -90,7 +106,7 @@ public class BoardController {
         return ResponseEntity.ok("댓글 등록 완료");
     }
 
-    //댓글 작성
+    //댓글 조회
     @GetMapping("/{id}/comments")
     public ResponseEntity<List<BoardComment>> getComments(@PathVariable Long id) {
         return ResponseEntity.ok(boardCommentRepository.findByBoardIdOrderByCreatedAtAsc(id));
@@ -102,7 +118,12 @@ public class BoardController {
             @PathVariable String type,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "latest") String sort) {
+            @RequestParam(defaultValue = "latest") String sort,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
         BoardType boardType = BoardType.valueOf(type.toUpperCase());
         Pageable pageable;

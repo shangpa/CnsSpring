@@ -5,6 +5,7 @@ import com.example.springjwt.User.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -58,6 +59,46 @@ public class BoardService {
         UserEntity user = userRepository.findByUsername(username);
         boolean liked = boardLikeRepository.existsByUserAndBoard(user, board);
 
+        return new BoardDetailResponseDTO(
+                board.getId(),
+                board.getContent(),
+                board.getWriter().getUsername(),
+                board.getImageUrls(),
+                board.getBoardType().toString(),
+                board.getCreatedAt().toString(),
+                board.getLikeCount(),
+                liked
+        );
+    }
+
+    // 인기게시판: 타입 상관없이 좋아요순 TOP N
+    public List<BoardDetailResponseDTO> getPopularBoards(int limit, String username) {
+        Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "likeCount"));
+        List<Board> boards = boardRepository.findAll(pageable).getContent();
+
+        return boards.stream()
+                .map(board -> toDetailDTO(board, username))
+                .toList();
+    }
+    // 타입별 최신순 TOP N
+    public List<BoardDetailResponseDTO> getBoardsByTypeAndSort(BoardType type, String sort, int limit, String username) {
+        Sort sorting = sort.equals("like") ?
+                Sort.by(Sort.Direction.DESC, "likeCount") :
+                Sort.by(Sort.Direction.DESC, "createdAt");
+        Pageable pageable = PageRequest.of(0, limit, sorting);
+        List<Board> boards = boardRepository.findByBoardType(type, pageable).getContent();
+
+        return boards.stream()
+                .map(board -> toDetailDTO(board, username))
+                .toList();
+    }
+
+    // 변환 함수
+    private BoardDetailResponseDTO toDetailDTO(Board board, String username) {
+        boolean liked = false;
+        if (username != null) {
+            liked = boardLikeRepository.existsByUserUsernameAndBoard(username, board);
+        }
         return new BoardDetailResponseDTO(
                 board.getId(),
                 board.getContent(),

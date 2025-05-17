@@ -7,6 +7,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
 
@@ -124,4 +125,34 @@ public class BoardService {
         List<Board> boards = boardRepository.findByBoardType(type, pageable).getContent();
         return boards.stream().map(b -> toDetailDTO(b, username)).toList();
     }
+    
+    //마이페이지 - 작성한 게시글 조회
+    public List<BoardDetailResponseDTO> getBoardsByUser(String username) {
+        UserEntity user = userRepository.findByUsername(username);
+        List<Board> boards = boardRepository.findByWriter(user);
+        return boards.stream().map(board -> BoardDetailResponseDTO.from(board)).toList();
+    }
+
+    //마이페이지 - 작성한 게시글 삭제
+    public void deleteBoard(Long id, String username) {
+        Board board = boardRepository.findById(id).orElseThrow();
+        if (!board.getWriter().getUsername().equals(username)) {
+            throw new AccessDeniedException("작성자만 삭제할 수 있습니다.");
+        }
+        boardRepository.delete(board);
+    }
+
+    //마이페이지 - 작성한 게시글 수정
+    public void updateBoard(Long id, BoardRequestDTO dto, String username) {
+        Board board = boardRepository.findById(id).orElseThrow();
+        if (!board.getWriter().getUsername().equals(username)) {
+            throw new AccessDeniedException("작성자만 수정할 수 있습니다.");
+        }
+        board.setContent(dto.getContent());
+        board.setBoardType(dto.getBoardType());
+        board.setImageUrls(dto.getImageUrls()); // 필요 시 처리
+        boardRepository.save(board);
+    }
+
+
 }

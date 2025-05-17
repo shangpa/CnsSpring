@@ -1,5 +1,6 @@
 package com.example.springjwt.board;
 
+import com.example.springjwt.User.UserEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,4 +20,6 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
 
     @Query("SELECT b FROM Board b LEFT JOIN b.comments c WHERE b.boardType = :type GROUP BY b ORDER BY COUNT(c) DESC")
     List<Board> findBoardsByCommentCount(@Param("type") BoardType type, Pageable pageable);
+
+    List<Board> findByWriter(UserEntity user);
 }

@@ -1,10 +1,14 @@
 package com.example.springjwt.recipe;
 
+import com.example.springjwt.Mypage.LikeRecipe;
+import com.example.springjwt.Mypage.LikeRecipeRepository;
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
 import com.example.springjwt.point.PointActionType;
 import com.example.springjwt.point.PointService;
+import com.example.springjwt.review.Recipe.ReviewRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -16,10 +20,12 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class  RecipeService {
-
+    private final ReviewRepository reviewRepository;
     private final RecipeRepository recipeRepository;
     private final UserRepository userRepository;
     private final PointService pointService;
+    private final LikeRecipeRepository likeRecipeRepository;
+
     // 전체 레시피 조회
     public List<Recipe> getAllRecipes() {
         return recipeRepository.findAll();
@@ -28,6 +34,9 @@ public class  RecipeService {
     // 공개된 레시피만 정렬해서 가져오기
     public List<RecipeSearchResponseDTO> getAllPublicRecipes(String sort) {
         List<Recipe> recipes;
+        // 로그인한 사용자 가져오기
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        UserEntity currentUser = userRepository.findByUsername(username);
 
         switch (sort != null ? sort : "viewCount") {
             case "likes":
@@ -48,9 +57,14 @@ public class  RecipeService {
                 break;
         }
 
-        return recipes.stream()
-                .map(RecipeSearchResponseDTO::fromEntity)
-                .collect(Collectors.toList());
+        return recipes.stream().map(recipe -> {
+            Double avgRatingWrapper = reviewRepository.findAvgRatingByRecipe(recipe.getRecipeId());
+            double avgRating = avgRatingWrapper != null ? avgRatingWrapper : 0.0;
+            int reviewCount = reviewRepository.countByRecipe(recipe);
+            boolean liked = likeRecipeRepository.existsByUserAndRecipe(currentUser, recipe);
+
+            return RecipeSearchResponseDTO.fromEntity(recipe, avgRating, reviewCount, liked);
+        }).collect(Collectors.toList());
     }
 
     // 특정 레시피 조회
@@ -102,7 +116,8 @@ public class  RecipeService {
     // 레시피 검색
     public List<RecipeSearchResponseDTO> searchRecipesByTitle(String title) {
         List<Recipe> recipes;
-
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        UserEntity currentUser = userRepository.findByUsername(username);
         if (title == null || title.trim().isEmpty()) {
             recipes = recipeRepository.findAll();
         } else {
@@ -110,7 +125,14 @@ public class  RecipeService {
         }
 
         return recipes.stream()
-                .map(RecipeSearchResponseDTO::fromEntity)
+                .map(recipe -> {
+                    Double avgRatingWrapper = reviewRepository.findAvgRatingByRecipe(recipe.getRecipeId());
+                    double avgRating = avgRatingWrapper != null ? avgRatingWrapper : 0.0;
+                    int reviewCount = reviewRepository.countByRecipe(recipe);
+                    boolean liked = likeRecipeRepository.existsByUserAndRecipe(currentUser, recipe);
+
+                    return RecipeSearchResponseDTO.fromEntity(recipe, avgRating, reviewCount, liked);
+                })
                 .collect(Collectors.toList());
     }
 

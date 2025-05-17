@@ -32,7 +32,7 @@ public class RecipeController {
     
     // 공개 레시피 조회
     @GetMapping("/public")
-    public List<RecipeSearchResponseDTO> getPublicRecipes(@RequestParam(required = false) String sort) {
+    public List<RecipeSearchResponseDTO> getPublicRecipes(@RequestParam(required = false) String sort,@AuthenticationPrincipal UserDetails userDetails) {
         return recipeService.getAllPublicRecipes(sort);
     }
 
@@ -77,7 +77,8 @@ public class RecipeController {
     // 레시피 검색 + 검색어 저장
     @GetMapping("/search")
     public ResponseEntity<List<RecipeSearchResponseDTO>> searchRecipes(
-            @RequestParam(required = false) String title) {
+            @RequestParam(required = false) String title
+            ,@AuthenticationPrincipal UserDetails userDetails) {
 
         System.out.println("search title: " + title);
 

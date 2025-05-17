@@ -1,7 +1,7 @@
 package com.example.springjwt.recipe;
 
-import com.example.springjwt.Mypage.LikeRecipe;
-import com.example.springjwt.Mypage.LikeRecipeRepository;
+import com.example.springjwt.mypage.LikeRecipe;
+import com.example.springjwt.mypage.LikeRecipeRepository;
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
 import com.example.springjwt.point.PointActionType;
@@ -152,7 +152,7 @@ public class  RecipeService {
                 .collect(Collectors.toList());
 
         return filtered.stream()
-                .map(RecipeSearchResponseDTO::fromEntity)
+                .map(recipe -> RecipeSearchResponseDTO.fromEntity(recipe, 0.0, recipe.getLikes(), false))
                 .collect(Collectors.toList());
     }
 
@@ -169,7 +169,7 @@ public class  RecipeService {
                             .collect(Collectors.toList());
 
                     List<RecipeSearchResponseDTO> dtos = matched.stream()
-                            .map(RecipeSearchResponseDTO::fromEntity)
+                            .map(recipe -> RecipeSearchResponseDTO.fromEntity(recipe, 0.0, recipe.getLikes(), false))
                             .collect(Collectors.toList());
 
                     return new IngredientRecipeGroup(keyword, dtos);

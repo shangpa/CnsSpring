@@ -8,10 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
 
@@ -24,6 +21,7 @@ public class RecommendRecipeController {
     private final RecommendRecipeRepository recommendRecipeRepository;
     private final RecipeRepository recipeRepository;
 
+    //추천 버튼 토글
     @PostMapping("/{recipeId}/recommend-toggle")
     public ResponseEntity<String> toggleRecommendRecipe(
             @PathVariable Long recipeId,
@@ -69,5 +67,21 @@ public class RecommendRecipeController {
 
         return ResponseEntity.ok("추천 추가됨");
     }
+    //추천 여부확인
+    @GetMapping("/{recipeId}/recommended")
+    public ResponseEntity<Boolean> isRecipeRecommended(
+            @PathVariable Long recipeId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        String username = userDetails.getUsername();
+        UserEntity user = userRepository.findByUsername(username);
+
+        Recipe recipe = recipeRepository.findById(recipeId)
+                .orElseThrow(() -> new RuntimeException("레시피 없음"));
+
+        boolean recommended = recommendRecipeRepository.findByUserAndRecipe(user, recipe).isPresent();
+        return ResponseEntity.ok(recommended);
+    }
+
 
 }

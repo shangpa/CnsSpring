@@ -1,4 +1,4 @@
-package com.example.springjwt.Mypage;
+package com.example.springjwt.mypage;
 
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.recipe.Recipe;
@@ -14,4 +14,5 @@ public interface LikeRecipeRepository extends JpaRepository<LikeRecipe, Long> {
     int countByRecipe(Recipe recipe);
 
     void delete(LikeRecipe likeRecipe);
+
 }

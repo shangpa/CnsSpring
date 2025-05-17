@@ -1,5 +1,6 @@
 package com.example.springjwt.jwt;
 
+import com.example.springjwt.User.UserRepository;
 import com.example.springjwt.dto.CustomUserDetails;
 import com.example.springjwt.User.UserEntity;
 import jakarta.servlet.FilterChain;
@@ -16,9 +17,11 @@ import java.io.IOException;
 public class JWTFilter extends OncePerRequestFilter {
 
     private final JWTUtil jwtUtil;
+    private final UserRepository userRepository;
 
-    public JWTFilter(JWTUtil jwtUtil) {
+    public JWTFilter(JWTUtil jwtUtil, UserRepository userRepository) {
         this.jwtUtil = jwtUtil;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -30,9 +33,9 @@ public class JWTFilter extends OncePerRequestFilter {
         // 인증 없이 접근 허용할 URI는 여기서 처리
         if (
                 requestURI.equals("/join") ||
-                        requestURI.equals("/login") ||
-                        requestURI.equals("/api/recipes/search") ||
-                        requestURI.startsWith("/uploads")
+                requestURI.equals("/login") ||
+                requestURI.equals("/api/recipes/search") ||
+                requestURI.startsWith("/uploads")
         ) {
             filterChain.doFilter(request, response);
             return;
@@ -60,10 +63,22 @@ public class JWTFilter extends OncePerRequestFilter {
         String username = jwtUtil.getUsername(token);
         String role = jwtUtil.getRole(token);
 
-        UserEntity userEntity = new UserEntity();
+        /*UserEntity userEntity = new UserEntity();
         userEntity.setUsername(username);
         userEntity.setPassword("temppassword");
-        userEntity.setRole(role);
+        userEntity.setRole(role);*/
+
+        /*UserEntity userEntity = userRepository.findByUsername(username);
+        if (userEntity == null) {
+            throw new IllegalArgumentException("JWT에 해당하는 유저가 없습니다");
+        }*/
+
+        UserEntity userEntity = userRepository.findByUsername(username);
+        if (userEntity == null) {
+            System.out.println("JWT에 해당하는 유저가 없습니다");
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         CustomUserDetails customUserDetails = new CustomUserDetails(userEntity);
         Authentication authToken = new UsernamePasswordAuthenticationToken(customUserDetails, null, customUserDetails.getAuthorities());

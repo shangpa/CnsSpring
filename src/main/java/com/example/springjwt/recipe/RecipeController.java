@@ -7,7 +7,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -86,6 +88,24 @@ public class RecipeController {
 
         List<RecipeSearchResponseDTO> recipes = recipeService.searchRecipesByTitle(title);
         return ResponseEntity.ok(recipes);
+    }
+
+    //메인 - 냉장고 재료 추천 레시피
+    @GetMapping("/recommend-by-title")
+    public ResponseEntity<List<RecipeSearchResponseDTO>> recommendByTitle(
+            @RequestParam List<String> ingredients) {
+        List<RecipeSearchResponseDTO> recommended =
+                recipeService.getRecommendedRecipesByTitleKeywords(ingredients);
+        return ResponseEntity.ok(recommended);
+    }
+    
+    //메인 - 냉장고 재료 추천 레시피 그룹
+    @PostMapping("/recommend-grouped")
+    public ResponseEntity<List<IngredientRecipeGroup>> recommendGroupedByTitle(
+            @RequestBody List<String> ingredients) {
+
+        List<IngredientRecipeGroup> result = recipeService.getGroupedRecommendedRecipesByTitle(ingredients);
+        return ResponseEntity.ok(result);
     }
 
 }

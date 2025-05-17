@@ -24,7 +24,11 @@ public class RecipeSearchResponseDTO {
     private int viewCount;
     private int likes;
 
-    public static RecipeSearchResponseDTO fromEntity(Recipe recipe) {
+    private double averageRating;//평균 리뷰 점수
+    private int reviewCount; //리뷰수
+    private boolean liked; // 현재 로그인한 사용자가 찜했는지 여부
+
+    public static RecipeSearchResponseDTO fromEntity(Recipe recipe, double avgRating, int reviewCount, boolean liked) {
         Map<String, Object> userMap = new HashMap<>();
         userMap.put("id", recipe.getUser().getId());
         userMap.put("name", recipe.getUser().getName());
@@ -40,6 +44,9 @@ public class RecipeSearchResponseDTO {
                 .createdAt(recipe.getCreatedAt().toString())
                 .viewCount(recipe.getViewCount())
                 .likes(recipe.getLikes())
+                .averageRating(avgRating)
+                .reviewCount(reviewCount)
+                .liked(liked)
                 .build();
     }
 }

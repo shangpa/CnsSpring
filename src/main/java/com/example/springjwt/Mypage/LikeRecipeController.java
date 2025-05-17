@@ -95,5 +95,19 @@ public class LikeRecipeController {
 
         return ResponseEntity.ok(result);
     }
+    //좋아요 누른상태인지
+    @GetMapping("/{recipeId}/liked")
+    public ResponseEntity<Boolean> isRecipeLiked(
+            @PathVariable Long recipeId,
+            @AuthenticationPrincipal UserDetails userDetails) {
 
+        String username = userDetails.getUsername();
+        UserEntity user = userRepository.findByUsername(username);
+
+        Recipe recipe = recipeRepository.findById(recipeId)
+                .orElseThrow(() -> new RuntimeException("레시피 없음"));
+
+        boolean liked = likeRecipeRepository.findByUserAndRecipe(user, recipe).isPresent();
+        return ResponseEntity.ok(liked);
+    }
 }

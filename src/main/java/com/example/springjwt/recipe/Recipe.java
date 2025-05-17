@@ -61,6 +61,9 @@ public class Recipe {
     @Column(nullable = false)
     private int likes = 0;
 
+    @Column(nullable = false)
+    private int recommends = 0;
+
     private String videoUrl;
 
     private int likePointStep = 0;   // 좋아요 10개 단위 포인트 지급 추적

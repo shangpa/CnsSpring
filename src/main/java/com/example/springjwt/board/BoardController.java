@@ -165,4 +165,33 @@ public class BoardController {
         return ResponseEntity.ok(new CommentListWithCountDTO(dtoList, dtoList.size()));
     }
 
+    //마이페이지 - 작성한 게시글 조회
+    @GetMapping("/mine")
+    public ResponseEntity<List<BoardDetailResponseDTO>> getMyBoards(
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        List<BoardDetailResponseDTO> myBoards = boardService.getBoardsByUser(userDetails.getUsername());
+        return ResponseEntity.ok(myBoards);
+    }
+
+    //마이페이지 - 작성한 게시글 삭제
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteBoard(@PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) {
+        boardService.deleteBoard(id, userDetails.getUsername());
+        return ResponseEntity.ok().build();
+    }
+
+    //마이페이지 - 작성한 게시글 수정
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateBoard(@PathVariable Long id,
+                                         @RequestBody BoardRequestDTO dto,
+                                         @AuthenticationPrincipal UserDetails userDetails) {
+        boardService.updateBoard(id, dto, userDetails.getUsername());
+        return ResponseEntity.ok().build();
+    }
+
 }

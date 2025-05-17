@@ -54,7 +54,8 @@ public class SecurityConfig {
                                 "/uploads/**",
                                 "/api/recipes/public", "/api/recipes/public/**",
                                 "/api/recipes/search", "/api/search/popular-keywords",
-                                "/api/trade-posts", "/api/trade-posts/**", "/api/main"
+                                "/api/trade-posts", "/api/trade-posts/**", "/api/main",
+                                "/api/boards/mine"
                         ).permitAll()
                         .requestMatchers("/api/user/**").authenticated()
                         .anyRequest().authenticated()

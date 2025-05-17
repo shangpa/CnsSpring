@@ -7,9 +7,17 @@ import com.example.springjwt.User.UserRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
+@RequestMapping("/api")
 public class MainController {
 
     private final UserRepository userRepository;
@@ -35,4 +43,17 @@ public class MainController {
         return new LoginInfoResponse(userName, name);
     }
 
+
+    @GetMapping("/main")
+    public ResponseEntity<Map<String, String>> getFridgeMainText(@AuthenticationPrincipal UserDetails userDetails) {
+        Map<String, String> response = new HashMap<>();
+
+        if (userDetails != null) {
+            response.put("fridgeMainText", "유통기한이 임박한 냉장고 재료를 알려드려요!");
+        } else {
+            response.put("fridgeMainText", "로그인 후 유통기한이 임박한 냉장고 재료를 확인해보세요!");
+        }
+
+        return ResponseEntity.ok(response);
+    }
 }

@@ -1,5 +1,5 @@
 package com.example.springjwt.fridge.recommend;
-import com.example.springjwt.Mypage.LikeRecipeRepository;
+import com.example.springjwt.mypage.LikeRecipeRepository;
 import com.example.springjwt.recipe.Recipe;
 import com.example.springjwt.recipe.RecipeRepository;
 import lombok.RequiredArgsConstructor;

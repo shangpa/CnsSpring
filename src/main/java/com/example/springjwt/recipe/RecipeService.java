@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -111,4 +113,46 @@ public class  RecipeService {
                 .map(RecipeSearchResponseDTO::fromEntity)
                 .collect(Collectors.toList());
     }
+
+    //메인-냉장고 재료 추천 레시피
+    public List<RecipeSearchResponseDTO> getRecommendedRecipesByTitleKeywords(List<String> keywords) {
+        if (keywords == null || keywords.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Recipe> recipes = recipeRepository.findByIsPublicTrue(); // 공개 레시피 전체 조회
+
+        List<Recipe> filtered = recipes.stream()
+                .filter(recipe -> keywords.stream()
+                        .anyMatch(keyword -> recipe.getTitle().contains(keyword)))
+                .sorted(Comparator.comparingInt(Recipe::getViewCount).reversed())
+                .limit(10) // 예: 최대 10개까지만 추천
+                .collect(Collectors.toList());
+
+        return filtered.stream()
+                .map(RecipeSearchResponseDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    //메인-냉장고 재료 추천 레시피 그룹
+    public List<IngredientRecipeGroup> getGroupedRecommendedRecipesByTitle(List<String> keywords) {
+        List<Recipe> allRecipes = recipeRepository.findByIsPublicTrue();
+
+        return keywords.stream()
+                .map(keyword -> {
+                    List<Recipe> matched = allRecipes.stream()
+                            .filter(recipe -> recipe.getTitle().toLowerCase().contains(keyword.toLowerCase()))
+                            .sorted(Comparator.comparingInt(Recipe::getViewCount).reversed())
+                            .limit(2)
+                            .collect(Collectors.toList());
+
+                    List<RecipeSearchResponseDTO> dtos = matched.stream()
+                            .map(RecipeSearchResponseDTO::fromEntity)
+                            .collect(Collectors.toList());
+
+                    return new IngredientRecipeGroup(keyword, dtos);
+                })
+                .collect(Collectors.toList());
+    }
+
 }

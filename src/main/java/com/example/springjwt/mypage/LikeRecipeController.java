@@ -1,4 +1,4 @@
-package com.example.springjwt.Mypage;
+package com.example.springjwt.mypage;
 
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
@@ -11,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;

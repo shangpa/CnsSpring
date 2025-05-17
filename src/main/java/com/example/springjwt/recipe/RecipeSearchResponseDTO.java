@@ -21,6 +21,7 @@ public class RecipeSearchResponseDTO {
     private String category;
     private String createdAt;
 
+    private String videoUrl;
     private int viewCount;
     private int likes;
 

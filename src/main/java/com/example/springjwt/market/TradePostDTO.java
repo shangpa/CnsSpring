@@ -22,6 +22,7 @@ public class TradePostDTO {
     private String location;        // 거래 희망 장소 (추후 사용)
     private String imageUrls;       // 이미지 URL 목록 (JSON 문자열)
     private String createdAt;
+    private Double distance;
 
     // DTO → Entity (User는 외부에서 주입)
     public TradePost toEntity() {
@@ -53,4 +54,23 @@ public class TradePostDTO {
                 .createdAt(tradePost.getCreatedAt().toString())
                 .build();
     }
+
+    // 거리 포함한 DTO 변환 메서드 따로 정의
+    public static TradePostDTO fromEntityWithDistance(TradePost tradePost, double distance) {
+        return TradePostDTO.builder()
+                .tradePostId(tradePost.getTradePostId())
+                .writer(tradePost.getUser().getUsername())
+                .category(tradePost.getCategory())
+                .title(tradePost.getTitle())
+                .quantity(tradePost.getQuantity())
+                .price(tradePost.getPrice())
+                .purchaseDate(tradePost.getPurchaseDate())
+                .description(tradePost.getDescription())
+                .location(tradePost.getLocation())
+                .imageUrls(tradePost.getImageUrls())
+                .createdAt(tradePost.getCreatedAt().toString())
+                .distance(distance)
+                .build();
+    }
+
 }

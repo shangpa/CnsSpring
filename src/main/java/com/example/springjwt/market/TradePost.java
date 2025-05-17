@@ -42,6 +42,12 @@ public class TradePost {
     @Column(length = 1000)
     private String description;
 
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
     @Lob
     @Column(columnDefinition = "TEXT")
     private String imageUrls;

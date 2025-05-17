@@ -22,4 +22,15 @@ public class UserEntity {
     private int point = 0; // 기본값 0
     @Column(nullable = false)
     private int fridgePointStep = 0;
+
+    @Column(nullable = false)
+    private int temperature = 36;
+
+    //위도
+    @Column(name = "latitude")
+    private Double latitude;
+
+    //경도
+    @Column(name = "longitude")
+    private Double longitude;
 }

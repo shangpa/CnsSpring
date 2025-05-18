@@ -19,7 +19,8 @@ public class NotificationEntity {
 
     private String content;
 
-    private boolean isRead = false;
+    @Column(name = "`read`", nullable = false)
+    private boolean read;
 
     private LocalDateTime createdAt = LocalDateTime.now();
 

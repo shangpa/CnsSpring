@@ -78,7 +78,8 @@ public class TradePostController {
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam(defaultValue = "1.0") double distanceKm
     ) {
-        List<TradePostDTO> nearby = tradePostService.getNearbyTradePosts(userDetails.getUsername(), distanceKm);
+        String username = userDetails != null ? userDetails.getUsername() : null;
+        List<TradePostDTO> nearby = tradePostService.getNearbyTradePosts(username, distanceKm);
         return ResponseEntity.ok(nearby);
     }
 
@@ -87,7 +88,7 @@ public class TradePostController {
     public ResponseEntity<List<TradePostDTO>> getSortedByDistance(
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        String username = userDetails.getUsername();
+        String username = userDetails != null ? userDetails.getUsername() : null;
         List<TradePostDTO> posts = tradePostService.getTradePostsSortedByDistance(username);
         return ResponseEntity.ok(posts);
     }
@@ -99,7 +100,8 @@ public class TradePostController {
             @RequestParam double distanceKm,
             @RequestParam String category
     ) {
-        List<TradePostDTO> result = tradePostService.getNearbyByCategory(userDetails.getUsername(), distanceKm, category);
+        String username = userDetails != null ? userDetails.getUsername() : null;
+        List<TradePostDTO> result = tradePostService.getNearbyByCategory(username, distanceKm, category);
         return ResponseEntity.ok(result);
     }
 

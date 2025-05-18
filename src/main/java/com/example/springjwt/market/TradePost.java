@@ -54,9 +54,11 @@ public class TradePost {
 
     private String location;
 
+    @Builder.Default
     @Column(nullable = false)
     private int status = STATUS_ONGOING;  // 기본값 0, 거래중
 
+    @Builder.Default
     @Column(name = "view_count", nullable = false)
     private int viewCount = 0;
 

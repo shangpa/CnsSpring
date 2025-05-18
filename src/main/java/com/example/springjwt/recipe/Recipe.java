@@ -55,17 +55,22 @@ public class Recipe {
     private LocalDateTime createdAt; // 생성 일시
     private boolean isPublic; // 공개
 
+    @Builder.Default
     @Column(nullable = false)
     private int viewCount = 0;
 
+    @Builder.Default
     @Column(nullable = false)
     private int likes = 0;
 
+    @Builder.Default
     @Column(nullable = false)
     private int recommends = 0;
 
     private String videoUrl;
 
+    @Builder.Default
     private int likePointStep = 0;   // 좋아요 10개 단위 포인트 지급 추적
+    @Builder.Default
     private int scrapPointStep = 0;  // 찜 10개 단위 포인트 지급 추적
 }

@@ -64,4 +64,7 @@ public interface TradePostRepository extends JpaRepository<TradePost, Long> {
     @Query("SELECT t FROM TradePost t ORDER BY t.viewCount DESC")
     List<TradePost> findTop3ByOrderByViewCountDesc(Pageable pageable);
 
+    @Query("SELECT t FROM TradePost t ORDER BY t.createdAt DESC")
+    List<TradePost> findAllByOrderByCreatedAtDesc();
+
 }

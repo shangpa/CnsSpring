@@ -68,6 +68,7 @@ public class NotificationController {
 
         return ResponseEntity.ok().build();
     }
+
     @PostMapping("/test")
     public ResponseEntity<Void> testSendNotification(@RequestHeader("Authorization") String token) {
         String username = jwtUtil.getUsername(token);

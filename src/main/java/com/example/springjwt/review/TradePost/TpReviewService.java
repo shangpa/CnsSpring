@@ -4,6 +4,7 @@ import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
 import com.example.springjwt.market.TradePost;
 import com.example.springjwt.market.TradePostRepository;
+import com.example.springjwt.notification.FCMService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -20,6 +21,7 @@ public class TpReviewService {
     private final TpReviewRepository tpReviewRepository;
     private final TradePostRepository tradePostRepository;
     private final UserRepository userRepository;
+    private final FCMService fcmService;
 
     // 거래글 리뷰 작성
     @Transactional
@@ -39,7 +41,15 @@ public class TpReviewService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 거래글이 없습니다."));
 
         TpReview tpReview = dto.toEntity(user, tradePost);
-
+        UserEntity postOwner = tradePost.getUser(); // 거래글 작성자
+        if (!postOwner.getUsername().equals(username)) {
+            fcmService.sendNotificationToUser(
+                    postOwner,
+                    "거래 리뷰 알림",
+                    user.getUsername() + "님이 당신의 거래글에 리뷰를 남겼습니다.",
+                    "MATERIAL"
+            );
+        }
         tpReviewRepository.save(tpReview);
 
         return TpReviewResponseDTO.fromEntity(tpReview);

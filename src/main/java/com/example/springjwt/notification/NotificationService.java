@@ -20,6 +20,7 @@ public class NotificationService {
     private final DeviceTokenRepository tokenRepository;
     private final UserRepository userRepository;
 
+    //알림 전송
     public void notifyUser(NotificationRequestDTO dto) {
         UserEntity user = userRepository.findById(dto.getUserId()).orElseThrow();
 

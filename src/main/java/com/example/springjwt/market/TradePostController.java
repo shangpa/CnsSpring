@@ -115,4 +115,17 @@ public class TradePostController {
         return ResponseEntity.ok(posts);
     }
 
+    // 조회수 기준 인기 거래글 3개
+    @GetMapping("/popular")
+    public ResponseEntity<List<TradePostSimpleResponseDTO>> getPopularTradePosts() {
+        List<TradePostSimpleResponseDTO> topPosts = tradePostService.getTop3PopularTradePosts();
+        return ResponseEntity.ok(topPosts);
+    }
+
+    @PatchMapping("/{id}/view")
+    public ResponseEntity<Void> incrementView(@PathVariable Long id) {
+        tradePostService.incrementViewCount(id);
+        return ResponseEntity.ok().build();
+    }
+
 }

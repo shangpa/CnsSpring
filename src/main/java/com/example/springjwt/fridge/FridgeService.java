@@ -4,6 +4,7 @@ import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
 import com.example.springjwt.point.PointActionType;
 import com.example.springjwt.point.PointService;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -111,4 +112,19 @@ public class FridgeService {
                 .collect(Collectors.toList());
     }
 
+    //냉장고 차감
+    @Transactional
+    public void useIngredients(List<UsedIngredientDTO> ingredients, UserEntity user) {
+        for (UsedIngredientDTO dto : ingredients) {
+            Fridge fridge = fridgeRepository.findByUserAndIngredientName(user, dto.getName())
+                    .orElseThrow(() -> new IllegalArgumentException("재료를 찾을 수 없습니다: " + dto.getName()));
+
+            double remaining = fridge.getQuantity() - dto.getAmount();
+            if (remaining < 0) {
+                throw new IllegalStateException("재료 수량이 부족합니다: " + dto.getName());
+            }
+
+            fridge.setQuantity(remaining);
+        }
+    }
 }

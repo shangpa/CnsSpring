@@ -17,12 +17,14 @@ public class FCMController {
     private final UserRepository userRepository;
     private final DeviceTokenRepository deviceTokenRepository;
     private final JWTUtil jwtUtil;
+    private final FCMService fcmService;
 
+    //토큰
     @PostMapping("/token")
     public ResponseEntity<Void> saveToken(@RequestHeader("Authorization") String token,
                                           @RequestBody FcmTokenRequestDTO request) {
-        String username = jwtUtil.getUsername(token); // ✅ username 추출
-        UserEntity user = userRepository.findByUsername(username); // ✅ 그대로 조회
+        String username = jwtUtil.getUsername(token); // username
+        UserEntity user = userRepository.findByUsername(username);
 
         DeviceToken deviceToken = new DeviceToken();
         deviceToken.setFcmToken(request.getToken());
@@ -33,4 +35,16 @@ public class FCMController {
         deviceTokenRepository.save(deviceToken);
         return ResponseEntity.ok().build();
     }
+
+    //알림전송
+    @PostMapping("/send")
+    public ResponseEntity<Void> sendCustomNotification(@RequestBody NotificationSendRequestDTO dto) {
+        UserEntity user = userRepository.findById(dto.getUserId())
+                .orElseThrow(() -> new RuntimeException("사용자 없음"));
+
+        fcmService.sendNotificationToUser(user, dto.getTitle(), dto.getContent(), dto.getCategory());
+
+        return ResponseEntity.ok().build();
+    }
+
 }

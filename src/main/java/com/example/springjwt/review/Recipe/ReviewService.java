@@ -3,6 +3,7 @@ package com.example.springjwt.review.Recipe;
 
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
+import com.example.springjwt.notification.FCMService;
 import com.example.springjwt.recipe.Recipe;
 import com.example.springjwt.recipe.RecipeCategory;
 import com.example.springjwt.recipe.RecipeRepository;
@@ -22,6 +23,7 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final RecipeRepository recipeRepository;
     private final UserRepository userRepository;
+    private final FCMService fcmService;
 
     // 리뷰 작성
     @Transactional
@@ -41,7 +43,15 @@ public class ReviewService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 레시피가 없습니다."));
 
         Review review = dto.toEntity(user, recipe);
-
+        UserEntity recipeOwner = recipe.getUser();
+        if (!recipeOwner.getUsername().equals(username)) { // 자기 자신에게는 알림 X
+            fcmService.sendNotificationToUser(
+                    recipeOwner,
+                    "리뷰 알림",
+                    user.getUsername() + "님이 당신의 레시피에 리뷰를 남겼습니다.",
+                    "RECIPE"
+            );
+        }
         reviewRepository.save(review);
         return ReviewResponseDTO.fromEntity(review);
     }

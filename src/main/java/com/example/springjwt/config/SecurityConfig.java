@@ -55,7 +55,7 @@ public class SecurityConfig {
                                 "/api/recipes/public", "/api/recipes/public/**",
                                 "/api/recipes/search", "/api/search/popular-keywords",
                                 "/api/trade-posts", "/api/trade-posts/**", "/api/main",
-                                "/api/boards/mine"
+                                "/api/boards/mine", "/trade-posts/popular"
                         ).permitAll()
                         .requestMatchers("/api/user/**").authenticated()
                         .anyRequest().authenticated()

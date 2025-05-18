@@ -2,7 +2,10 @@ package com.example.springjwt.market;
 
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import com.example.springjwt.util.DistanceUtil;
 
@@ -181,4 +184,19 @@ public class TradePostService {
                 .collect(Collectors.toList());
     }
 
+    public List<TradePostSimpleResponseDTO> getTop3PopularTradePosts() {
+        Pageable pageable = PageRequest.of(0, 3);
+        List<TradePost> topPosts = tradePostRepository.findTop3ByOrderByViewCountDesc(pageable);
+
+        return topPosts.stream()
+                .map(TradePostSimpleResponseDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void incrementViewCount(Long postId) {
+        TradePost post = tradePostRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("거래글을 찾을 수 없습니다."));
+        post.setViewCount(post.getViewCount() + 1);
+    }
 }

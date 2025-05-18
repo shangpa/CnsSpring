@@ -53,8 +53,12 @@ public class TradePost {
     private String imageUrls;
 
     private String location;
+
     @Column(nullable = false)
     private int status = STATUS_ONGOING;  // 기본값 0, 거래중
+
+    @Column(name = "view_count", nullable = false)
+    private int viewCount = 0;
 
     public String extractFirstImageUrl() {
         if (this.imageUrls == null || this.imageUrls.isEmpty()) {

@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -60,5 +61,7 @@ public interface TradePostRepository extends JpaRepository<TradePost, Long> {
             @Param("category") String category
     );
 
+    @Query("SELECT t FROM TradePost t ORDER BY t.viewCount DESC")
+    List<TradePost> findTop3ByOrderByViewCountDesc(Pageable pageable);
 
 }

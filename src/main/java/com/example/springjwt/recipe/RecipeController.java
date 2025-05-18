@@ -1,5 +1,6 @@
 package com.example.springjwt.recipe;
 
+import com.example.springjwt.dto.CustomUserDetails;
 import com.example.springjwt.search.SearchKeywordService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -108,4 +109,13 @@ public class RecipeController {
         return ResponseEntity.ok(result);
     }
 
+    // 예상 사용 재료
+    @GetMapping("/{recipeId}/expected-ingredients")
+    public ResponseEntity<List<ExpectedIngredientDTO>> getExpectedIngredients(
+            @PathVariable Long recipeId,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        List<ExpectedIngredientDTO> list = recipeService.getExpectedIngredients(recipeId, userDetails.getUserEntity());
+        return ResponseEntity.ok(list);
+    }
 }

@@ -2,6 +2,7 @@ package com.example.springjwt.fridge;
 
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
+import com.example.springjwt.dto.CustomUserDetails;
 import com.example.springjwt.jwt.JWTUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -83,6 +84,18 @@ public class FridgeController {
                 .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
 
         fridgeService.deleteFridge(id, user);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/use-ingredients")
+    public ResponseEntity<?> useIngredients(@RequestBody List<UsedIngredientDTO> list,
+                                            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        fridgeService.useIngredients(list, userDetails.getUserEntity());
+        System.out.println("useIngredients 진입");
+        if (userDetails == null) {
+            System.out.println("userDetails가 null입니다");
+            return ResponseEntity.status(403).body("인증된 사용자 정보가 없습니다");
+        }
         return ResponseEntity.ok().build();
     }
 

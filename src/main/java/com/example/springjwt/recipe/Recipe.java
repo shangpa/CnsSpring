@@ -68,4 +68,9 @@ public class Recipe {
 
     private int likePointStep = 0;   // 좋아요 10개 단위 포인트 지급 추적
     private int scrapPointStep = 0;  // 찜 10개 단위 포인트 지급 추적
+
+    public String getIngredients() {
+        return this.ingredients;
+    }
+
 }

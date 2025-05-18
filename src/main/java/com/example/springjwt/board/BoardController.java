@@ -2,6 +2,8 @@ package com.example.springjwt.board;
 
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
+import com.example.springjwt.User.UserService;
+import com.example.springjwt.notification.FCMService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,6 +28,7 @@ public class BoardController {
     private final BoardLikeRepository boardLikeRepository;
     private final BoardCommentRepository boardCommentRepository;
     private final BoardService boardService;
+    private final FCMService fcmService;
 
     //커뮤니티 게시글 작성
     @PostMapping
@@ -83,6 +86,16 @@ public class BoardController {
 
         int count = (int) boardLikeRepository.countByBoard(board);
         board.setLikeCount(count);
+
+        UserEntity boardOwner = board.getWriter();
+        if (!boardOwner.getUsername().equals(user.getUsername())) {
+            fcmService.sendNotificationToUser(
+                    boardOwner,
+                    "추천 알림",
+                    user.getUsername() + "님이 당신의 게시글을 추천했습니다.",
+                    "COMMUNITY"
+            );
+        }
         boardRepository.save(board);
 
         return ResponseEntity.ok("추천 완료");
@@ -103,6 +116,15 @@ public class BoardController {
 
         boardCommentRepository.save(comment);
         board.setCommentCount(board.getCommentCount() + 1);
+        UserEntity writer = board.getWriter();
+        if (!writer.getUsername().equals(user.getUsername())) {
+            fcmService.sendNotificationToUser(
+                    writer,
+                    "댓글 알림",
+                    user.getUsername() + "님이 당신의 게시글에 댓글을 남겼습니다.",
+                    "COMMUNITY"
+            );
+        }
         boardRepository.save(board);
         return ResponseEntity.ok("댓글 등록 완료");
     }

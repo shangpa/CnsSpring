@@ -11,6 +11,9 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import java.time.LocalDate;
+import java.util.stream.Collectors;
+
 @Service
 public class FridgeService {
 
@@ -96,4 +99,16 @@ public class FridgeService {
         }
         fridgeRepository.delete(fridge);
     }
+
+    //유통기한 찾기
+    public List<Fridge> getExpiringFridgeItems(int daysLeft) {
+        LocalDate today = LocalDate.now();
+        LocalDate targetDate = today.plusDays(daysLeft);
+        return fridgeRepository.findAll().stream()
+                .filter(f -> f.getFridgeDate() != null)
+                .filter(f -> !f.getFridgeDate().isBefore(today)) // 오늘 이후
+                .filter(f -> !f.getFridgeDate().isAfter(targetDate)) // targetDate 이전
+                .collect(Collectors.toList());
+    }
+
 }

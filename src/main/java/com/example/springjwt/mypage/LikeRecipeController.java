@@ -2,11 +2,13 @@ package com.example.springjwt.mypage;
 
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
+import com.example.springjwt.notification.FCMService;
 import com.example.springjwt.point.PointActionType;
 import com.example.springjwt.point.PointService;
 import com.example.springjwt.recipe.Recipe;
 import com.example.springjwt.recipe.RecipeDTO;
 import com.example.springjwt.recipe.RecipeRepository;
+import com.example.springjwt.recipe.RecipeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -26,7 +28,7 @@ public class LikeRecipeController {
     private final LikeRecipeRepository likeRecipeRepository;
     private final UserRepository userRepository;
     private final PointService pointService;
-
+    private final FCMService fcmService;
     @PostMapping("/{recipeId}/like-toggle")
     public ResponseEntity<String> toggleLikeRecipe(
             @PathVariable Long recipeId,
@@ -71,7 +73,15 @@ public class LikeRecipeController {
 
             recipe.setLikePointStep(newStep);
         }
-
+        UserEntity recipeOwner = recipe.getUser();
+        if (!recipeOwner.getUsername().equals(user.getUsername())) {
+            fcmService.sendNotificationToUser(
+                    recipeOwner,
+                    "레시피 좋아요 알림",
+                    user.getUsername() + "님이 당신의 레시피를 좋아합니다.",
+                    "RECIPE"
+            );
+        }
         recipeRepository.save(recipe);
 
         return ResponseEntity.ok("좋아요 추가됨");

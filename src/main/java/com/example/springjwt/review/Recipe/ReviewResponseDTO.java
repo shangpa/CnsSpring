@@ -13,6 +13,8 @@ public class ReviewResponseDTO {
     private String mediaUrls;
     private LocalDateTime createdAt;
     private String username; // 리뷰 작성자
+    private Long recipeId;
+    private String recipeTitle;
 
     public static ReviewResponseDTO fromEntity(Review review) {
         return ReviewResponseDTO.builder()
@@ -22,6 +24,8 @@ public class ReviewResponseDTO {
                 .mediaUrls(review.getMediaUrls())
                 .createdAt(review.getCreatedAt())
                 .username(review.getUser().getUsername())
+                .recipeId(review.getRecipe().getRecipeId())
+                .recipeTitle(review.getRecipe().getTitle())
                 .build();
     }
 

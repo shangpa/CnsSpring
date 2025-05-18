@@ -18,6 +18,8 @@ public class NotificationController {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final JWTUtil jwtUtil;
+    private final DeviceTokenRepository deviceTokenRepository;
+    private final FCMService fcmService;
 
     //알림 목록 불러오기
     @GetMapping
@@ -66,5 +68,18 @@ public class NotificationController {
 
         return ResponseEntity.ok().build();
     }
+    @PostMapping("/test")
+    public ResponseEntity<Void> testSendNotification(@RequestHeader("Authorization") String token) {
+        String username = jwtUtil.getUsername(token);
+        UserEntity user = userRepository.findByUsername(username);
+        List<DeviceToken> tokens = deviceTokenRepository.findByUser(user);
 
+        for (DeviceToken deviceToken : tokens) {
+            fcmService.sendNotification(deviceToken.getFcmToken(),
+                    "테스트 알림",
+                    "이 알림이 보이면 성공!");
+        }
+
+        return ResponseEntity.ok().build();
+    }
 }

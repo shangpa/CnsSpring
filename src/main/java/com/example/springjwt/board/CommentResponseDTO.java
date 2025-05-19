@@ -6,6 +6,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class CommentResponseDTO {
+    private Long id;
     private String user;
     private String content;
     private String createdAt;

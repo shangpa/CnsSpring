@@ -178,6 +178,7 @@ public class BoardController {
 
         List<CommentResponseDTO> dtoList = comments.stream()
                 .map(c -> new CommentResponseDTO(
+                        c.getId(),
                         c.getUser().getUsername(),
                         c.getContent(),
                         c.getCreatedAt().toString()

@@ -40,6 +40,8 @@ dependencies {
 
     implementation 'com.google.firebase:firebase-admin:9.2.0' //to alarm
     implementation 'org.json:json:20230227'
+
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
 }
 
 tasks.named('test') {

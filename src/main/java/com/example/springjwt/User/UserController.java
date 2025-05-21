@@ -4,8 +4,10 @@ import com.example.springjwt.dto.CustomUserDetails;
 import com.example.springjwt.dto.LoginInfoResponse;
 import com.example.springjwt.dto.UserUpdateRequestDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -18,7 +20,7 @@ public class UserController {
 
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
-
+    private final UserRepository userRepository;
     // 사용자 위치 저장
     @PostMapping("/location")
     public ResponseEntity<?> setUserLocation(
@@ -71,4 +73,29 @@ public class UserController {
         return ResponseEntity.ok(matches);
     }
 
+    @GetMapping("/id")
+    public ResponseEntity<Long> getUserIdByUsername(@RequestParam String username) {
+        UserEntity user = userRepository.findByUsername(username);
+        return ResponseEntity.ok((long) user.getId());
+    }
+    //id로 이름찾기
+    @GetMapping("/profile-by-id")
+    public ResponseEntity<Map> getUsernameById(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam Long id
+    ) {
+        // (Optional) 인증된 사용자 확인
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Unauthorized"));
+        }
+
+        UserEntity user = userRepository.findById(id.intValue()).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "User not found"));
+        }
+
+        return ResponseEntity.ok(Map.of("username", user.getUsername()));
+    }
 }

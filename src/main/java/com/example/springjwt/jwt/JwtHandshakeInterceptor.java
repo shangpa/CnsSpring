@@ -22,34 +22,30 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
     @Override
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                    WebSocketHandler wsHandler, Map<String, Object> attributes) {
-        // 헤더에서 Authorization 값 꺼냄
-        List<String> authHeaders = request.getHeaders().get("Authorization");
-        System.out.println("🛰️ [Interceptor] Authorization 헤더: " + authHeaders);
-        if (authHeaders != null && !authHeaders.isEmpty()) {
-            String authHeader = authHeaders.get(0);
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                String jwtToken = authHeader.substring(7);
-                System.out.println("🔐 [Interceptor] 토큰 추출: " + jwtToken); // 🔥 로그 추가
+        System.out.println("🛰️ beforeHandshake 실행됨");
 
-                // 2️⃣ 토큰 유효성 검사
-                if (!jwtUtil.isExpired(jwtToken)) {
-                    String username = jwtUtil.getUsername(jwtToken);
-                    System.out.println("✅ [Interceptor] 토큰 유효, 사용자: " + username); // 🔥 로그 추가
+        // 쿼리 파라미터에서 토큰 추출
+        String query = request.getURI().getQuery(); // 예: token=eyJ...
+        System.out.println("🛰️ [Interceptor] query: " + query);
 
-                    attributes.put("username", username); // 필요 시 추가
-                    return true;
-                } else {
-                    System.out.println("❌ [Interceptor] 토큰 만료"); // 🔥
-                }
+        if (query != null && query.startsWith("token=")) {
+            String jwtToken = query.substring(6); // token= 이후부터 잘라냄
+            System.out.println("🔐 [Interceptor] 쿼리로부터 토큰 추출: " + jwtToken);
+
+            if (!jwtUtil.isExpired(jwtToken)) {
+                String username = jwtUtil.getUsername(jwtToken);
+                System.out.println("✅ [Interceptor] 토큰 유효, 사용자: " + username);
+                attributes.put("username", username);
+                return true;
             } else {
-                System.out.println("❌ [Interceptor] Bearer 포맷 아님"); // 🔥
+                System.out.println("❌ [Interceptor] 토큰 만료");
             }
         } else {
-            System.out.println("❌ [Interceptor] Authorization 헤더 없음"); // 🔥
+            System.out.println("❌ [Interceptor] 토큰 없음 (query)");
         }
-        return false;// 실패하면 false 반환 (403 발생)
-    }
 
+        return false;
+    }
     @Override
     public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                WebSocketHandler wsHandler, Exception exception) {

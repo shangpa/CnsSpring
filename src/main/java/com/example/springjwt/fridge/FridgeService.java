@@ -2,17 +2,21 @@ package com.example.springjwt.fridge;
 
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
+import com.example.springjwt.fridge.history.FridgeHistory;
+import com.example.springjwt.fridge.history.FridgeHistoryService;
 import com.example.springjwt.point.PointActionType;
 import com.example.springjwt.point.PointService;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 import java.time.LocalDate;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -20,11 +24,13 @@ public class FridgeService {
 
     @Autowired
     private FridgeRepository fridgeRepository;
-
     @Autowired
     private UserRepository userRepository; // UserEntity 조회를 위한 Repository
     @Autowired
-    private  PointService pointService;
+    private PointService pointService;
+    @Autowired
+    private FridgeHistoryService historyService;
+
 
     // 냉장고 항목 추가 (userId를 추가 인자로 받음)
     public Fridge createFridge(Fridge fridge, Long userId) {
@@ -36,7 +42,15 @@ public class FridgeService {
         fridge.setUpdatedAt(LocalDateTime.now());
         fridgeRepository.save(fridge);
 
-        // 포인트 적립 체크
+        // 히스토리 기록
+        historyService.saveHistory(
+                (long) user.getId(),
+                fridge.getIngredientName(),
+                fridge.getQuantity(),
+                FridgeHistory.ActionType.ADD
+        );
+
+        // 포인트 처리
         long totalCount = fridgeRepository.countByUser(user);
         int newStep = (int) (totalCount / 10);
         int prevStep = user.getFridgePointStep();
@@ -49,7 +63,6 @@ public class FridgeService {
                     diff * 10,
                     "냉장고 재료 누적 " + totalCount + "개 등록"
             );
-
             user.setFridgePointStep(newStep);
             userRepository.save(user);
         }
@@ -57,6 +70,7 @@ public class FridgeService {
     }
 
     // 로그인한 사용자의 냉장고 항목 조회
+    @Transactional(readOnly = true)
     public List<Fridge> getFridgesByUserId(Long userId) {
         return fridgeRepository.findByUserIdOrderByUpdatedAtDesc(userId);
     }
@@ -125,6 +139,52 @@ public class FridgeService {
             }
 
             fridge.setQuantity(remaining);
+            fridge.setUpdatedAt(LocalDateTime.now());
+            fridgeRepository.save(fridge); // 꼭 저장해줘야 DB 반영됨
+
+            // 사용 이력 기록 추가
+            historyService.saveHistory(
+                    (long) user.getId(), // int → Long 변환
+                    dto.getName(),
+                    dto.getAmount(),
+                    FridgeHistory.ActionType.USE
+            );
+        }
+    }
+
+    //영수증
+    public void save(FridgeCreateRequest dto, UserEntity user) {
+        Fridge fridge = new Fridge();
+        fridge.setIngredientName(dto.getIngredientName());
+        fridge.setQuantity(dto.getQuantity());
+        fridge.setFridgeDate(LocalDate.parse(dto.getFridgeDate()));
+        fridge.setDateOption(dto.getDateOption());
+        fridge.setStorageArea(dto.getStorageArea());
+        fridge.setUnitDetail(dto.getUnitDetail());
+        fridge.setUnitCategory(UnitCategory.valueOf(dto.getUnitCategory()));
+        fridge.setUser(user);
+        fridge.setCreatedAt(LocalDateTime.now());
+        fridge.setUpdatedAt(LocalDateTime.now());
+
+        fridgeRepository.save(fridge);
+    }
+
+    @Transactional
+    public void saveBatch(List<FridgeCreateRequest> dtos, UserEntity user) {
+        for (FridgeCreateRequest dto : dtos) {
+            Fridge fridge = new Fridge();
+            fridge.setIngredientName(dto.getIngredientName());
+            fridge.setQuantity(dto.getQuantity());
+            fridge.setFridgeDate(LocalDate.parse(dto.getFridgeDate()));
+            fridge.setDateOption(dto.getDateOption());
+            fridge.setStorageArea(dto.getStorageArea());
+            fridge.setUnitDetail(dto.getUnitDetail());
+            fridge.setUnitCategory(UnitCategory.valueOf(dto.getUnitCategory()));
+            fridge.setUser(user);
+            fridge.setCreatedAt(LocalDateTime.now());
+            fridge.setUpdatedAt(LocalDateTime.now());
+
+            fridgeRepository.save(fridge);
         }
     }
 }

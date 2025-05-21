@@ -57,7 +57,7 @@ public class SecurityConfig {
                                 "/api/trade-posts", "/api/trade-posts/**", "/api/main",
                                 "/api/boards/mine", "/trade-posts/popular"
                         ).permitAll()
-                        .requestMatchers("/api/user/**").authenticated()
+                        .requestMatchers("/api/user/**", "/api/fridges/ocr").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(new JWTFilter(jwtUtil, userRepository), UsernamePasswordAuthenticationFilter.class)

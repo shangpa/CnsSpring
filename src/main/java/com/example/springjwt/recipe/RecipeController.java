@@ -20,6 +20,7 @@ public class RecipeController {
 
     private final RecipeService recipeService;
     private final SearchKeywordService searchKeywordService; // 검색 기록 저장용 서비스 추가
+    private final RecipeRepository recipeRepository;
 
     // 레시피 전체 조회
     @GetMapping
@@ -117,5 +118,17 @@ public class RecipeController {
     ) {
         List<ExpectedIngredientDTO> list = recipeService.getExpectedIngredients(recipeId, userDetails.getUserEntity());
         return ResponseEntity.ok(list);
+    }
+
+    //메인 - 레시피 조회
+    @GetMapping("/top/view")
+    public ResponseEntity<List<RecipeSearchResponseDTO>> getTopViewedRecipes() {
+        List<Recipe> top = recipeRepository.findTop6ByIsPublicTrueOrderByViewCountDesc();
+
+        List<RecipeSearchResponseDTO> result = top.stream()
+                .map(recipe -> RecipeSearchResponseDTO.fromEntity(recipe, 0.0, 0, false))
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(result);
     }
 }

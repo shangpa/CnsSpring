@@ -119,4 +119,5 @@ public class LikeRecipeController {
         boolean liked = likeRecipeRepository.findByUserAndRecipe(user, recipe).isPresent();
         return ResponseEntity.ok(liked);
     }
+
 }

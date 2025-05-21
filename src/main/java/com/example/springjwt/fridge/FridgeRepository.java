@@ -10,4 +10,5 @@ public interface FridgeRepository extends JpaRepository<Fridge, Long> {
     List<Fridge> findByUserIdOrderByUpdatedAtDesc(Long userId);
     long countByUser(UserEntity user);
     Optional<Fridge> findByUserAndIngredientName(UserEntity user, String ingredientName);
+    Optional<Fridge> findTopByUserAndIngredientNameOrderByUpdatedAtDesc(UserEntity user, String ingredientName);
 }

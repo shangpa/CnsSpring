@@ -33,4 +33,6 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
     List<Recipe> findByUserId(int userId);
     // 사용자 ID와 레시피 ID로 단건 조회
     Optional<Recipe> findByRecipeIdAndUserId(Long recipeId, int userId);
+    //메인 - 레시피 조회
+    List<Recipe> findTop6ByIsPublicTrueOrderByViewCountDesc();
 }

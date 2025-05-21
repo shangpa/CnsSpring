@@ -2,7 +2,11 @@ package com.example.springjwt.fridge;
 
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
+import com.example.springjwt.User.UserService;
 import com.example.springjwt.dto.CustomUserDetails;
+import com.example.springjwt.fridge.history.FridgeHistory;
+import com.example.springjwt.fridge.history.FridgeHistoryResponse;
+import com.example.springjwt.fridge.history.FridgeHistoryService;
 import com.example.springjwt.jwt.JWTUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -10,7 +14,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-import java.util.Optional;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.util.List;
@@ -25,6 +28,10 @@ public class FridgeController {
     private UserRepository userRepository;
     @Autowired
     private JWTUtil jwtUtil;
+    @Autowired
+    private FridgeHistoryService historyService;
+    @Autowired
+    private UserService userService;
 
     // 냉장고 항목 추가 (POST)
     // 요청 본문에서 FridgeRequest DTO를 받아, 내부의 userId를 이용해 Fridge 엔티티 생성 후 저장
@@ -99,5 +106,42 @@ public class FridgeController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/history")
+    public ResponseEntity<List<FridgeHistoryResponse>> getHistoryByIngredient(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam String ingredientName
+    ) {
+        Long userId = (long) userRepository.findOptionalByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."))
+                .getId();
 
+        return ResponseEntity.ok(historyService.getHistory(userId, ingredientName));
+    }
+
+    @PostMapping("/ocr")
+    public ResponseEntity<Void> createFridgeByOCR(@RequestBody FridgeCreateRequest dto,
+                                                  @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        UserEntity user = userRepository.findOptionalByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
+
+        fridgeService.save(dto, user);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/ocr/batch")
+    public ResponseEntity<Void> createFridgesByOCRBatch(
+            @RequestBody List<FridgeCreateRequest> dtos,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        UserEntity user = userRepository.findOptionalByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
+
+        fridgeService.saveBatch(dtos, user);
+        return ResponseEntity.ok().build();
+    }
 }

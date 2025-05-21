@@ -63,4 +63,29 @@ public class FCMService {
         }
     }
 
+    //채팅용
+    public void sendChatNotification(UserEntity user, String content, String roomKey) {
+        List<DeviceToken> tokens = deviceTokenRepository.findByUser(user);
+        for (DeviceToken token : tokens) {
+            Message message = Message.builder()
+                    .setToken(token.getFcmToken())
+                    .putData("title", "새 채팅 메시지")
+                    .putData("body", content)
+                    .putData("category", "CHAT")
+                    .putData("roomKey", roomKey)
+                    .build();
+            try {
+                firebaseMessaging.send(message);
+            } catch (FirebaseMessagingException e) {
+                System.out.println("FCM 전송 실패"+e);
+                System.out.println("실패한 토큰: " + token.getFcmToken());
+                System.out.println("사용자 ID: " + user.getId());
+                if (e.getMessage().contains("Requested entity was not found")) {
+                    deviceTokenRepository.delete(token);
+                    System.out.println("🗑️ 무효한 FCM 토큰 삭제됨: " + token.getFcmToken());
+                }
+            }
+        }
+    }
+
 }

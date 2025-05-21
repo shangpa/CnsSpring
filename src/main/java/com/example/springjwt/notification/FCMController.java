@@ -25,7 +25,9 @@ public class FCMController {
                                           @RequestBody FcmTokenRequestDTO request) {
         String username = jwtUtil.getUsername(token); // username
         UserEntity user = userRepository.findByUsername(username);
+        deviceTokenRepository.deleteByFcmToken(request.getToken());
 
+        if (!deviceTokenRepository.existsByUserAndFcmToken(user, request.getToken())) {
         DeviceToken deviceToken = new DeviceToken();
         deviceToken.setFcmToken(request.getToken());
         deviceToken.setPlatform(request.getPlatform());
@@ -33,6 +35,7 @@ public class FCMController {
         deviceToken.setUpdatedAt(LocalDateTime.now());
 
         deviceTokenRepository.save(deviceToken);
+        }
         return ResponseEntity.ok().build();
     }
 

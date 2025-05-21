@@ -55,7 +55,7 @@ public class SecurityConfig {
                                 "/api/recipes/public", "/api/recipes/public/**",
                                 "/api/recipes/search", "/api/search/popular-keywords",
                                 "/api/trade-posts", "/api/trade-posts/**", "/api/main",
-                                "/api/boards/mine", "/trade-posts/popular"
+                                "/api/boards/mine", "/trade-posts/popular","/ws/**"
                         ).permitAll()
                         .requestMatchers("/api/user/**", "/api/fridges/ocr").authenticated()
                         .anyRequest().authenticated()

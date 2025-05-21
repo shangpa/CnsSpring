@@ -12,6 +12,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/chat-room")
@@ -44,4 +46,18 @@ public class ChatRoomController {
 
         return ResponseEntity.ok(ChatRoomResponseDTO.from(room));
     }
+
+    //채팅방 리스트 조회
+    @GetMapping("/list")
+    public ResponseEntity<List<ChatRoomListResponseDTO>> getUserChatRooms(
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        UserEntity user = userRepository.findByUsername(userDetails.getUsername());
+        if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        List<ChatRoomListResponseDTO> list = chatRoomService.getChatRoomsForUser(user);
+        return ResponseEntity.ok(list);
+    }
+
+
 }

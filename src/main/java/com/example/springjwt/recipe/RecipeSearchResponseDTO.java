@@ -41,6 +41,7 @@ public class RecipeSearchResponseDTO {
                 .difficulty(recipe.getDifficulty().name())
                 .cookingTime(recipe.getCookingTime())
                 .user(userMap)
+                .videoUrl(recipe.getVideoUrl())
                 .category(recipe.getCategory().name())
                 .createdAt(recipe.getCreatedAt().toString())
                 .viewCount(recipe.getViewCount())

@@ -42,6 +42,7 @@ dependencies {
     implementation 'org.json:json:20230227'
 
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
+    implementation 'com.google.cloud:google-cloud-translate:2.6.0'
 }
 
 tasks.named('test') {

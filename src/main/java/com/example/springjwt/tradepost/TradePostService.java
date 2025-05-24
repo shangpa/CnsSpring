@@ -215,4 +215,28 @@ public class TradePostService {
                 .orElseThrow(() -> new IllegalArgumentException("거래글을 찾을 수 없습니다."));
         post.setViewCount(post.getViewCount() + 1);
     }
+
+    @Transactional
+    public void completeTradePost(Long postId, int buyerId) {
+        TradePost post = tradePostRepository.findById(postId).orElseThrow();
+        if (post.getStatus() != TradePost.STATUS_ONGOING) {
+            throw new IllegalStateException("이미 거래 완료된 게시글입니다.");
+        }
+
+        UserEntity buyer = userRepository.findById(buyerId).orElseThrow();
+        UserEntity seller = post.getUser();
+
+        int point = post.getPrice();
+        if (buyer.getPoint() < point) {
+            throw new IllegalStateException("구매자의 포인트가 부족합니다.");
+        }
+
+        // 포인트 이전
+        buyer.setPoint(buyer.getPoint() - point);
+        seller.setPoint(seller.getPoint() + point);
+
+        // 거래글 상태 업데이트
+        post.setStatus(TradePost.STATUS_COMPLETED);
+        post.setBuyer(buyer);
+    }
 }

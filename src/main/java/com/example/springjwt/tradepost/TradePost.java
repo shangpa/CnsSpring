@@ -78,6 +78,9 @@ public class TradePost {
             return null;
         }
     }
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "buyer_id")
+    private UserEntity buyer;
 
     @Column(name = "createdAt", nullable = false, updatable = false)
     private java.time.LocalDateTime createdAt;

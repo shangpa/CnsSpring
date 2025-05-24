@@ -38,13 +38,6 @@ public class TradePostController {
         return ResponseEntity.ok(tradePostDTO);
     }
 
-    // 거래 완료 처리
-    @PatchMapping("/{id}/complete")
-    public ResponseEntity<TradePostDTO> completeTradePost(@PathVariable Long id) {
-        TradePost completedPost = tradePostService.completeTradePost(id);
-        return ResponseEntity.ok(TradePostDTO.fromEntity(completedPost));
-    }
-
     // 내가 작성한 거래글
     @GetMapping("/my-posts")
     public ResponseEntity<List<TradePostSimpleResponseDTO>> getMyTradePosts(
@@ -147,5 +140,22 @@ public class TradePostController {
         return ResponseEntity.ok(
                 list.stream().map(req -> UserSimpleDTO.fromEntity(req.getRequester())).toList()
         );
+    }
+
+    @GetMapping("/mypurchases")
+    public ResponseEntity<List<TradePostSimpleResponseDTO>> getMyPurchasedPosts(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        List<TradePostSimpleResponseDTO> purchases = tradePostService.getMyPurchasedPosts(userDetails.getUsername());
+        return ResponseEntity.ok(purchases);
+    }
+
+    @PatchMapping("/{id}/complete")
+    public ResponseEntity<TradePostDTO> completeTradePost(
+            @PathVariable Long id,
+            @RequestParam Long buyerId
+    ) {
+        TradePost completedPost = tradePostService.completeTradePost(id, buyerId);
+        return ResponseEntity.ok(TradePostDTO.fromEntity(completedPost));
     }
 }

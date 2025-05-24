@@ -217,13 +217,13 @@ public class TradePostService {
     }
 
     @Transactional
-    public void completeTradePost(Long postId, int buyerId) {
+    public TradePost completeTradePost(Long postId, long buyerId) {
         TradePost post = tradePostRepository.findById(postId).orElseThrow();
         if (post.getStatus() != TradePost.STATUS_ONGOING) {
             throw new IllegalStateException("이미 거래 완료된 게시글입니다.");
         }
 
-        UserEntity buyer = userRepository.findById(buyerId).orElseThrow();
+        UserEntity buyer = userRepository.findById((int)buyerId).orElseThrow();
         UserEntity seller = post.getUser();
 
         int point = post.getPrice();
@@ -238,5 +238,14 @@ public class TradePostService {
         // 거래글 상태 업데이트
         post.setStatus(TradePost.STATUS_COMPLETED);
         post.setBuyer(buyer);
+
+        return post;
+    }
+    public List<TradePostSimpleResponseDTO> getMyPurchasedPosts(String username) {
+        UserEntity user = userRepository.findByUsername(username);
+        List<TradePost> posts = tradePostRepository.findByBuyerAndStatus(user, TradePost.STATUS_COMPLETED);
+        return posts.stream()
+                .map(TradePostSimpleResponseDTO::fromEntity)
+                .collect(Collectors.toList());
     }
 }

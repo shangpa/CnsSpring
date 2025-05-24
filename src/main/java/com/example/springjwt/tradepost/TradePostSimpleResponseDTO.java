@@ -1,4 +1,4 @@
-package com.example.springjwt.market;
+package com.example.springjwt.tradepost;
 import lombok.*;
 
 @Getter

@@ -1,7 +1,7 @@
 package com.example.springjwt.review.TradePost;
 
 import com.example.springjwt.User.UserEntity;
-import com.example.springjwt.market.TradePost;
+import com.example.springjwt.tradepost.TradePost;
 import jakarta.persistence.*;
 import lombok.*;
 

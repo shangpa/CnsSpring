@@ -1,6 +1,5 @@
-package com.example.springjwt.market;
+package com.example.springjwt.tradepost;
 
-import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserService;
 import com.example.springjwt.dto.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +9,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/trade-posts")

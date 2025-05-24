@@ -1,4 +1,4 @@
-package com.example.springjwt.market;
+package com.example.springjwt.tradepost;
 
 import com.example.springjwt.User.UserEntity;
 import com.fasterxml.jackson.core.type.TypeReference;

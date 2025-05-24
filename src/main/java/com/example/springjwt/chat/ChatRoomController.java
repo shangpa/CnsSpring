@@ -2,9 +2,8 @@ package com.example.springjwt.chat;
 
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
-import com.example.springjwt.User.UserService;
-import com.example.springjwt.market.TradePost;
-import com.example.springjwt.market.TradePostRepository;
+import com.example.springjwt.tradepost.TradePost;
+import com.example.springjwt.tradepost.TradePostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

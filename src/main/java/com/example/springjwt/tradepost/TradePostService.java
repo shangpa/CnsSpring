@@ -1,4 +1,4 @@
-package com.example.springjwt.market;
+package com.example.springjwt.tradepost;
 
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
@@ -214,5 +214,38 @@ public class TradePostService {
         TradePost post = tradePostRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("거래글을 찾을 수 없습니다."));
         post.setViewCount(post.getViewCount() + 1);
+    }
+
+    @Transactional
+    public TradePost completeTradePost(Long postId, long buyerId) {
+        TradePost post = tradePostRepository.findById(postId).orElseThrow();
+        if (post.getStatus() != TradePost.STATUS_ONGOING) {
+            throw new IllegalStateException("이미 거래 완료된 게시글입니다.");
+        }
+
+        UserEntity buyer = userRepository.findById((int)buyerId).orElseThrow();
+        UserEntity seller = post.getUser();
+
+        int point = post.getPrice();
+        if (buyer.getPoint() < point) {
+            throw new IllegalStateException("구매자의 포인트가 부족합니다.");
+        }
+
+        // 포인트 이전
+        buyer.setPoint(buyer.getPoint() - point);
+        seller.setPoint(seller.getPoint() + point);
+
+        // 거래글 상태 업데이트
+        post.setStatus(TradePost.STATUS_COMPLETED);
+        post.setBuyer(buyer);
+
+        return post;
+    }
+    public List<TradePostSimpleResponseDTO> getMyPurchasedPosts(String username) {
+        UserEntity user = userRepository.findByUsername(username);
+        List<TradePost> posts = tradePostRepository.findByBuyerAndStatus(user, TradePost.STATUS_COMPLETED);
+        return posts.stream()
+                .map(TradePostSimpleResponseDTO::fromEntity)
+                .collect(Collectors.toList());
     }
 }

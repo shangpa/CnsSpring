@@ -1,4 +1,4 @@
-package com.example.springjwt.market;
+package com.example.springjwt.tradepost;
 
 import com.example.springjwt.User.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -66,5 +66,7 @@ public interface TradePostRepository extends JpaRepository<TradePost, Long> {
 
     @Query("SELECT t FROM TradePost t ORDER BY t.createdAt DESC")
     List<TradePost> findAllByOrderByCreatedAtDesc();
+
+    List<TradePost> findByBuyerAndStatus(UserEntity buyer, int status);
 
 }

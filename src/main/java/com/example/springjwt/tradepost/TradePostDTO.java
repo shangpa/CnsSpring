@@ -1,6 +1,5 @@
-package com.example.springjwt.market;
+package com.example.springjwt.tradepost;
 
-import com.example.springjwt.User.UserEntity;
 import lombok.*;
 
 import java.time.LocalDate;

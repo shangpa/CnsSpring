@@ -1,8 +1,11 @@
-package com.example.springjwt.market;
+package com.example.springjwt.tradepost;
 
-import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserService;
 import com.example.springjwt.dto.CustomUserDetails;
+import com.example.springjwt.tradepost.request.TradeCompleteRequest;
+import com.example.springjwt.tradepost.request.TradeCompleteRequestRepository;
+import com.example.springjwt.tradepost.request.TradeCompleteRequestService;
+import com.example.springjwt.tradepost.request.UserSimpleDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -10,7 +13,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/trade-posts")
@@ -19,7 +21,8 @@ public class TradePostController {
 
     private final TradePostService tradePostService;
     private final UserService userService;
-
+    private final TradeCompleteRequestService tradeCompleteRequestService;
+    private final TradeCompleteRequestRepository tradeCompleteRequestRepository;
     // 거래글 생성
     @PostMapping
     public ResponseEntity<TradePostDTO> createTradePost(@RequestBody TradePostDTO dto,
@@ -33,13 +36,6 @@ public class TradePostController {
     public ResponseEntity<TradePostDTO> getTradePostById(@PathVariable Long id) {
         TradePostDTO tradePostDTO = tradePostService.getTradePostById(id);
         return ResponseEntity.ok(tradePostDTO);
-    }
-
-    // 거래 완료 처리
-    @PatchMapping("/{id}/complete")
-    public ResponseEntity<TradePostDTO> completeTradePost(@PathVariable Long id) {
-        TradePost completedPost = tradePostService.completeTradePost(id);
-        return ResponseEntity.ok(TradePostDTO.fromEntity(completedPost));
     }
 
     // 내가 작성한 거래글
@@ -130,4 +126,36 @@ public class TradePostController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/{id}/complete-request")
+    public ResponseEntity<?> requestComplete(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        tradeCompleteRequestService.createRequest(id, userDetails.getUsername());
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{id}/complete-requests")
+    public ResponseEntity<List<UserSimpleDTO>> getRequesters(@PathVariable Long id) {
+        List<TradeCompleteRequest> list = tradeCompleteRequestRepository.findByTradePost_TradePostId(id);
+        return ResponseEntity.ok(
+                list.stream().map(req -> UserSimpleDTO.fromEntity(req.getRequester())).toList()
+        );
+    }
+
+    @GetMapping("/mypurchases")
+    public ResponseEntity<List<TradePostSimpleResponseDTO>> getMyPurchasedPosts(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        List<TradePostSimpleResponseDTO> purchases = tradePostService.getMyPurchasedPosts(userDetails.getUsername());
+        return ResponseEntity.ok(purchases);
+    }
+
+    @PatchMapping("/{id}/complete")
+    public ResponseEntity<TradePostDTO> completeTradePost(
+            @PathVariable Long id,
+            @RequestParam Long buyerId
+    ) {
+        TradePost completedPost = tradePostService.completeTradePost(id, buyerId);
+        return ResponseEntity.ok(TradePostDTO.fromEntity(completedPost));
+    }
 }

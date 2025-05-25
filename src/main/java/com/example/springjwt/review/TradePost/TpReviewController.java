@@ -35,4 +35,12 @@ public class TpReviewController {
     public ResponseEntity<List<TpReviewResponseDTO>> getReviewsOnMyTradePosts() {
         return ResponseEntity.ok(tpReviewService.getReviewsOnMyTradePosts());
     }
+
+    // username으로 특정 유저의 거래글에 달린 리뷰 조회
+    @GetMapping("/reviews-on-user/username/{username}")
+    public ResponseEntity<List<TpReviewResponseDTO>> getReviewsOnUserTradePostsByUsername(
+            @PathVariable String username,
+            @RequestHeader("Authorization") String token) { // 토큰을 받는다
+        return ResponseEntity.ok(tpReviewService.getReviewsOnUserTradePostsByUsername(username));
+    }
 }

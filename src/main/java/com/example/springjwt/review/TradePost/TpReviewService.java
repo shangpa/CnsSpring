@@ -98,4 +98,20 @@ public class TpReviewService {
                 .map(TpReviewResponseDTO::fromEntity)
                 .collect(Collectors.toList());
     }
+
+    @Transactional(readOnly = true)
+    public List<TpReviewResponseDTO> getReviewsOnUserTradePostsByUsername(String username) {
+        UserEntity user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new IllegalArgumentException("해당 username을 가진 유저가 존재하지 않습니다.");
+        }
+
+        List<TpReview> reviews = tpReviewRepository.findByTradePost_User_Id(user.getId());
+
+        return reviews.stream()
+                .map(TpReviewResponseDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+
 }

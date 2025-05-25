@@ -248,4 +248,18 @@ public class TradePostService {
                 .map(TradePostSimpleResponseDTO::fromEntity)
                 .collect(Collectors.toList());
     }
+
+    //특정 유저 포스트 가져오기
+    public List<TradePostSimpleResponseDTO> getPostsByUsername(String username) {
+        return tradePostRepository.findByUser_Username(username).stream()
+                .map(TradePostSimpleResponseDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+    //특정 유저 포스트(상태) 가져오기
+    public List<TradePostSimpleResponseDTO> getPostsByUsernameAndStatus(String username, int status) {
+        return tradePostRepository.findByUser_UsernameAndStatus(username, status).stream()
+                .map(TradePostSimpleResponseDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
 }

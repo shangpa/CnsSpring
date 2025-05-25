@@ -69,4 +69,7 @@ public interface TradePostRepository extends JpaRepository<TradePost, Long> {
 
     List<TradePost> findByBuyerAndStatus(UserEntity buyer, int status);
 
+    List<TradePost> findByUser_Username(String username);
+    List<TradePost> findByUser_UsernameAndStatus(String username, int status);
+
 }

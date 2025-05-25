@@ -158,4 +158,18 @@ public class TradePostController {
         TradePost completedPost = tradePostService.completeTradePost(id, buyerId);
         return ResponseEntity.ok(TradePostDTO.fromEntity(completedPost));
     }
+    
+    @GetMapping("/user/{username}")
+    public ResponseEntity<List<TradePostSimpleResponseDTO>> getPostsByUsername(@PathVariable String username) {
+        return ResponseEntity.ok(tradePostService.getPostsByUsername(username));
+    }
+
+    @GetMapping("/user/{username}/status/{status}")
+    public ResponseEntity<List<TradePostSimpleResponseDTO>> getPostsByUsernameAndStatus(
+            @PathVariable String username,
+            @PathVariable int status
+    ) {
+        return ResponseEntity.ok(tradePostService.getPostsByUsernameAndStatus(username, status));
+    }
+
 }

@@ -35,6 +35,7 @@ public class JWTFilter extends OncePerRequestFilter {
                 requestURI.equals("/join") ||
                 requestURI.equals("/login") ||
                 requestURI.equals("/api/recipes/search") ||
+                requestURI.equals("/admin/join") ||
                 requestURI.startsWith("/uploads")
         ) {
             filterChain.doFilter(request, response);

@@ -45,12 +45,13 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable())
+        http.cors(cors -> cors.configure(http))
+                .csrf(csrf -> csrf.disable())
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/login", "/", "/join",
+                                "/login", "/", "/join","/admin/join",
                                 "/uploads/**",
                                 "/api/recipes/public", "/api/recipes/public/**",
                                 "/api/recipes/search", "/api/search/popular-keywords",
@@ -58,6 +59,7 @@ public class SecurityConfig {
                                 "/api/boards/mine", "/trade-posts/popular","/ws/**"
                         ).permitAll()
                         .requestMatchers("/api/user/**", "/api/fridges/ocr").authenticated()
+                        .requestMatchers("/admin/**").hasRole("ADMIN")//관리자만가능
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(new JWTFilter(jwtUtil, userRepository), UsernamePasswordAuthenticationFilter.class)

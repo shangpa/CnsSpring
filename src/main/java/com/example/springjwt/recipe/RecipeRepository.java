@@ -1,10 +1,12 @@
 package com.example.springjwt.recipe;
 
 import com.example.springjwt.User.UserEntity;
+import com.example.springjwt.admin.dto.RecipeMonthlyStatsDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,4 +37,15 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
     Optional<Recipe> findByRecipeIdAndUserId(Long recipeId, int userId);
     //메인 - 레시피 조회
     List<Recipe> findTop6ByIsPublicTrueOrderByViewCountDesc();
+
+    List<Recipe> findTop3ByIsPublicTrueOrderByViewCountDesc();//얘는 3개임
+
+    // RecipeRepository.java
+    @Query("SELECT new com.example.springjwt.admin.dto.RecipeMonthlyStatsDTO(CAST(FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m') AS string), COUNT(r)) " +
+            "FROM Recipe r " +
+            "WHERE r.createdAt >= :startDate " +
+            "GROUP BY FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m') " +
+            "ORDER BY FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m')")
+    List<RecipeMonthlyStatsDTO> findRecentRecipeCounts(@Param("startDate") LocalDateTime startDate);
+
 }

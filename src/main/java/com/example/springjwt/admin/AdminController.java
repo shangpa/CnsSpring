@@ -2,9 +2,13 @@ package com.example.springjwt.admin;
 
 import com.example.springjwt.User.JoinService;
 import com.example.springjwt.admin.dto.RecipeMonthlyStatsDTO;
+import com.example.springjwt.board.BoardDetailResponseDTO;
+import com.example.springjwt.board.BoardService;
 import com.example.springjwt.dto.JoinDTO;
 import com.example.springjwt.recipe.RecipeSearchResponseDTO;
 import com.example.springjwt.recipe.RecipeService;
+import com.example.springjwt.tradepost.TradePostService;
+import com.example.springjwt.tradepost.TradePostSimpleResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +24,8 @@ public class AdminController {
     private final JoinService joinService;
     private final RecipeService recipeService;
     private final AdminRecipeService adminRecipeService;
+    private final TradePostService tradePostService;
+    private final BoardService boardService;
 
 
     // 관리자 회원가입
@@ -39,7 +45,7 @@ public class AdminController {
         System.out.println("관리자 :"+Thread.currentThread().getName()+"로그인");
         return ResponseEntity.ok("✅ 관리자 전용 API 접근 성공");
     }
-    // ✅ 관리자 인기 레시피 3개 조회
+    // 관리자 인기 레시피 3개 조회
     @GetMapping("/recipes/top3")
     public ResponseEntity<List<RecipeSearchResponseDTO>> getTop3Recipes() {
         return ResponseEntity.ok(adminRecipeService.getTop3Recipes());
@@ -49,5 +55,18 @@ public class AdminController {
     @GetMapping("/monthly-stats")
     public ResponseEntity<List<RecipeMonthlyStatsDTO>> getMonthlyStats() {
         return ResponseEntity.ok(recipeService.getRecentFourMonthsStats());
+    }
+    
+    // 관리자 인기 거래글 3개 조회
+    @GetMapping("/popular/top3")
+    public ResponseEntity<List<TradePostSimpleResponseDTO>> getPopularTradePosts() {
+        List<TradePostSimpleResponseDTO> topPosts = tradePostService.getTop3PopularTradePosts();
+        return ResponseEntity.ok(topPosts);
+    }
+
+    // 관리자 인기 커뮤니티 3개 조회
+    @GetMapping("/boards/top3")
+    public ResponseEntity<List<BoardDetailResponseDTO>> getTop3Boards() {
+        return ResponseEntity.ok(boardService.getTop3PopularBoardsForAdmin());
     }
 }

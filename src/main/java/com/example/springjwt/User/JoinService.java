@@ -15,6 +15,7 @@ public class JoinService {
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
     }
 
+    //일반 유저
     public boolean joinProcess(JoinDTO joinDTO) {
 
         String name = joinDTO.getName();
@@ -36,4 +37,22 @@ public class JoinService {
         userRepository.save(data);
         return true;  // 회원가입 성공
     }
+
+    //관리자
+    public boolean joinAdminProcess(JoinDTO joinDTO) {
+
+        String username = joinDTO.getUsername();
+        if (userRepository.existsByUsername(username)) {
+            return false;
+        }
+
+        UserEntity admin = new UserEntity();
+        admin.setName(joinDTO.getName());
+        admin.setUsername(username);
+        admin.setPassword(bCryptPasswordEncoder.encode(joinDTO.getPassword()));
+        admin.setRole("ROLE_ADMIN");  // ✅ 핵심
+        userRepository.save(admin);
+        return true;
+    }
+
 }

@@ -154,5 +154,23 @@ public class BoardService {
         boardRepository.save(board);
     }
 
+    //관리자용 인기순3개
+    public List<BoardDetailResponseDTO> getTop3PopularBoardsForAdmin() {
+        Pageable pageable = PageRequest.of(0, 3, Sort.by(Sort.Direction.DESC, "likeCount"));
+        List<Board> boards = boardRepository.findAll(pageable).getContent();
+
+        return boards.stream()
+                .map(board -> new BoardDetailResponseDTO(
+                        board.getId(),
+                        board.getContent(),
+                        board.getWriter().getUsername(),
+                        board.getImageUrls(),
+                        board.getBoardType().toString(),
+                        board.getCreatedAt().toString(),
+                        board.getLikeCount(),
+                        false,
+                        board.getCommentCount()
+                )).toList();
+    }
 
 }

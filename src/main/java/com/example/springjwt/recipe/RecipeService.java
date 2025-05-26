@@ -1,5 +1,6 @@
 package com.example.springjwt.recipe;
 
+import com.example.springjwt.admin.dto.RecipeMonthlyStatsDTO;
 import com.example.springjwt.fridge.Fridge;
 import com.example.springjwt.fridge.FridgeRepository;
 import com.example.springjwt.mypage.LikeRecipe;
@@ -15,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -213,6 +216,13 @@ public class  RecipeService {
         }
 
         return result;
+    }
+    // RecipeService.java
+    public List<RecipeMonthlyStatsDTO> getRecentFourMonthsStats() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime fourMonthsAgo = now.minusMonths(3).withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+
+        return recipeRepository.findRecentRecipeCounts(fourMonthsAgo);
     }
 
 }

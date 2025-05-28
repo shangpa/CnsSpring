@@ -2,6 +2,7 @@ package com.example.springjwt.board;
 
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
+import com.example.springjwt.admin.dto.BoardMonthlyStatsDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -9,7 +10,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.security.access.AccessDeniedException;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -171,6 +175,15 @@ public class BoardService {
                         false,
                         board.getCommentCount()
                 )).toList();
+    }
+    public List<BoardMonthlyStatsDTO> countBoardMonthly(LocalDateTime startDate) {
+        List<Object[]> rawData = boardRepository.countBoardMonthlyRaw(startDate);
+        return rawData.stream()
+                .map(row -> new BoardMonthlyStatsDTO(
+                        (String) row[0],
+                        ((Number) row[1]).longValue() // COUNT는 Long이지만 안전하게 처리
+                ))
+                .collect(Collectors.toList());
     }
 
 }

@@ -1,8 +1,10 @@
 package com.example.springjwt.admin;
 
 import com.example.springjwt.User.JoinService;
+import com.example.springjwt.admin.dto.BoardMonthlyStatsDTO;
 import com.example.springjwt.admin.dto.RecipeMonthlyStatsDTO;
 import com.example.springjwt.board.BoardDetailResponseDTO;
+import com.example.springjwt.board.BoardRepository;
 import com.example.springjwt.board.BoardService;
 import com.example.springjwt.dto.JoinDTO;
 import com.example.springjwt.recipe.RecipeSearchResponseDTO;
@@ -14,6 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @RestController
@@ -26,7 +30,7 @@ public class AdminController {
     private final AdminRecipeService adminRecipeService;
     private final TradePostService tradePostService;
     private final BoardService boardService;
-
+    private final BoardRepository boardRepository;
 
     // 관리자 회원가입
     @PostMapping("/join")
@@ -68,5 +72,19 @@ public class AdminController {
     @GetMapping("/boards/top3")
     public ResponseEntity<List<BoardDetailResponseDTO>> getTop3Boards() {
         return ResponseEntity.ok(boardService.getTop3PopularBoardsForAdmin());
+    }
+
+    @GetMapping("/board/monthly")
+    public ResponseEntity<List<BoardMonthlyStatsDTO>> getBoardMonthlyStats() {
+        LocalDateTime startDate = LocalDateTime.now()
+                .minusMonths(3)
+                .withDayOfMonth(1)
+                .withHour(0)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+
+        List<BoardMonthlyStatsDTO> stats = boardService.countBoardMonthly(startDate);
+        return ResponseEntity.ok(stats);
     }
 }

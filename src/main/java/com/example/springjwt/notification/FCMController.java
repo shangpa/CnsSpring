@@ -50,4 +50,21 @@ public class FCMController {
         return ResponseEntity.ok().build();
     }
 
+    //로그아웃시 토큰 삭제
+    @PostMapping("/token/delete")
+    public ResponseEntity<Void> deleteToken(
+            @RequestHeader("Authorization") String token,
+            @RequestBody FcmTokenRequestDTO request
+    ) {
+        String username = jwtUtil.getUsername(token);
+        UserEntity user = userRepository.findByUsername(username);
+        if (user == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        // 해당 유저의 이 FCM 토큰만 삭제
+        deviceTokenRepository.deleteByUserAndFcmToken(user, request.getToken());
+
+        return ResponseEntity.ok().build();
+    }
 }

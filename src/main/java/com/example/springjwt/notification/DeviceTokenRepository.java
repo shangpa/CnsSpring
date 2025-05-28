@@ -12,4 +12,6 @@ public interface DeviceTokenRepository extends JpaRepository<DeviceToken, Long> 
     boolean existsByFcmToken(String fcmToken);
     boolean existsByUserAndFcmToken(UserEntity user, String fcmToken);
     void deleteByFcmToken(String fcmToken);
+    void deleteByUserAndFcmToken(UserEntity user, String fcmToken);
+
 }

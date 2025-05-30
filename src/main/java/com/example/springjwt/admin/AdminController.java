@@ -174,6 +174,11 @@ public class AdminController {
         return ResponseEntity.ok(tradePostService.countFreeTradePostMonthly(startDate));
     }
 
+    /**
+     * 관리자용 회원 리스트 조회 (페이징)
+     * - 응답: 회원 id, 이름(name), 아이디(username)
+     * - GET /api/admin/users?page=0&size=10
+     */
     @GetMapping("/users")
     public Page<UserListDTO> getUserList(@RequestParam(defaultValue = "0") int page,
                                          @RequestParam(defaultValue = "10") int size) {
@@ -181,6 +186,12 @@ public class AdminController {
                 PageRequest.of(page, size, Sort.by("id").descending())
         );
     }
+
+    /**
+     * 관리자용 회원 상세 정보 조회
+     * - 응답: 이름, 아이디, 가입일, 포인트, 작성한 레시피 수, 거래글 수, 리뷰 수
+     * - GET /api/admin/users/{userId}
+     */
     @GetMapping("/users/{userId}")
     public UserDetailDTO getUserDetail(@PathVariable int userId) {
         UserEntity user = userRepository.findById(userId)
@@ -201,6 +212,11 @@ public class AdminController {
         );
     }
 
+    /**
+     * 특정 회원이 작성한 레시피 리스트 조회
+     * - 응답: username, 레시피 제목, 작성일
+     * - GET /api/admin/users/{userId}/recipes
+     */
     @GetMapping("/users/{userId}/recipes")
     public List<UserRecipeSimpleDTO> getUserRecipes(@PathVariable int userId) {
         return recipeRepository.findRecipesByUserId(userId);

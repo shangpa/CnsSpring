@@ -93,4 +93,5 @@ public interface TradePostRepository extends JpaRepository<TradePost, Long> {
 """)
     List<Object[]> countFreeTradePostMonthlyRaw(@Param("startDate") LocalDateTime startDate);
 
+    int countByUser(UserEntity user);
 }

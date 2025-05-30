@@ -1,20 +1,28 @@
 package com.example.springjwt.admin;
 
 import com.example.springjwt.User.JoinService;
-import com.example.springjwt.admin.dto.BoardMonthlyStatsDTO;
-import com.example.springjwt.admin.dto.RecipeMonthlyStatsDTO;
+import com.example.springjwt.User.UserEntity;
+import com.example.springjwt.User.UserRepository;
+import com.example.springjwt.User.UserService;
+import com.example.springjwt.admin.dto.*;
 import com.example.springjwt.board.BoardDetailResponseDTO;
 import com.example.springjwt.board.BoardRepository;
 import com.example.springjwt.board.BoardService;
 import com.example.springjwt.dto.JoinDTO;
+import com.example.springjwt.recipe.RecipeRepository;
 import com.example.springjwt.recipe.RecipeSearchResponseDTO;
 import com.example.springjwt.recipe.RecipeService;
 import com.example.springjwt.report.ReportRepository;
 import com.example.springjwt.report.ReportService;
+import com.example.springjwt.review.Recipe.ReviewRepository;
 import com.example.springjwt.tradepost.TradePostRepository;
 import com.example.springjwt.tradepost.TradePostService;
 import com.example.springjwt.tradepost.TradePostSimpleResponseDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -34,7 +42,10 @@ public class AdminController {
     private final TradePostService tradePostService;
     private final BoardService boardService;
     private final ReportService reportService;
-
+    private final UserRepository userRepository;
+    private final RecipeRepository recipeRepository;
+    private final TradePostRepository tradePostRepository;
+    private final ReviewRepository reviewRepository;
     // 관리자 회원가입
     @PostMapping("/join")
     public ResponseEntity<String> adminJoin(@RequestBody JoinDTO joinDTO) {
@@ -162,5 +173,38 @@ public class AdminController {
 
         return ResponseEntity.ok(tradePostService.countFreeTradePostMonthly(startDate));
     }
+
+    @GetMapping("/users")
+    public Page<UserListDTO> getUserList(@RequestParam(defaultValue = "0") int page,
+                                         @RequestParam(defaultValue = "10") int size) {
+        return userRepository.findAllBy(
+                PageRequest.of(page, size, Sort.by("id").descending())
+        );
+    }
+    @GetMapping("/users/{userId}")
+    public UserDetailDTO getUserDetail(@PathVariable int userId) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("해당 유저를 찾을 수 없습니다."));
+
+        int recipeCount = recipeRepository.countByUser(user);
+        int tradePostCount = tradePostRepository.countByUser(user);
+        int reviewCount = reviewRepository.countByUser(user);
+
+        return new UserDetailDTO(
+                user.getName(),
+                user.getUsername(),
+                user.getCreatedAt(),
+                user.getPoint(),
+                recipeCount,
+                tradePostCount,
+                reviewCount
+        );
+    }
+
+    @GetMapping("/users/{userId}/recipes")
+    public List<UserRecipeSimpleDTO> getUserRecipes(@PathVariable int userId) {
+        return recipeRepository.findRecipesByUserId(userId);
+    }
+
 
 }

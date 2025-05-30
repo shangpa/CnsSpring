@@ -9,6 +9,9 @@ import com.example.springjwt.board.BoardService;
 import com.example.springjwt.dto.JoinDTO;
 import com.example.springjwt.recipe.RecipeSearchResponseDTO;
 import com.example.springjwt.recipe.RecipeService;
+import com.example.springjwt.report.ReportRepository;
+import com.example.springjwt.report.ReportService;
+import com.example.springjwt.tradepost.TradePostRepository;
 import com.example.springjwt.tradepost.TradePostService;
 import com.example.springjwt.tradepost.TradePostSimpleResponseDTO;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +33,7 @@ public class AdminController {
     private final AdminRecipeService adminRecipeService;
     private final TradePostService tradePostService;
     private final BoardService boardService;
-    private final BoardRepository boardRepository;
+    private final ReportService reportService;
 
     // 관리자 회원가입
     @PostMapping("/join")
@@ -74,6 +77,7 @@ public class AdminController {
         return ResponseEntity.ok(boardService.getTop3PopularBoardsForAdmin());
     }
 
+    //최근 4개월 커뮤니티 게시글 통계
     @GetMapping("/board/monthly")
     public ResponseEntity<List<BoardMonthlyStatsDTO>> getBoardMonthlyStats() {
         LocalDateTime startDate = LocalDateTime.now()
@@ -87,4 +91,32 @@ public class AdminController {
         List<BoardMonthlyStatsDTO> stats = boardService.countBoardMonthly(startDate);
         return ResponseEntity.ok(stats);
     }
+
+    //최근 4개월 커뮤니티 댓글 통계
+    @GetMapping("/comment/monthly")
+    public ResponseEntity<List<BoardMonthlyStatsDTO>> getCommentMonthlyStats() {
+        LocalDateTime startDate = LocalDateTime.now()
+                .minusMonths(3)
+                .withDayOfMonth(1)
+                .withHour(0)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+
+        List<BoardMonthlyStatsDTO> stats = adminRecipeService.countCommentMonthly(startDate);
+        return ResponseEntity.ok(stats);
+    }
+
+    //최근 4개월 신고 통계
+    @GetMapping("/report/monthly")
+    public ResponseEntity<List<BoardMonthlyStatsDTO>> getReportMonthlyStats() {
+        LocalDateTime startDate = LocalDateTime.now()
+                .minusMonths(3)
+                .withDayOfMonth(1)
+                .withHour(0).withMinute(0).withSecond(0).withNano(0);
+
+        List<BoardMonthlyStatsDTO> stats = reportService.countReportMonthly(startDate);
+        return ResponseEntity.ok(stats);
+    }
+
 }

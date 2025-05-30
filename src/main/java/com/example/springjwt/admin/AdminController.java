@@ -119,4 +119,48 @@ public class AdminController {
         return ResponseEntity.ok(stats);
     }
 
+    //최근 4개월 레시피 통계
+    @GetMapping("/recipe/monthly")
+    public ResponseEntity<List<BoardMonthlyStatsDTO>> getRecipeMonthlyStats() {
+        LocalDateTime startDate = LocalDateTime.now()
+                .minusMonths(3)
+                .withDayOfMonth(1)
+                .withHour(0).withMinute(0).withSecond(0).withNano(0);
+
+        return ResponseEntity.ok(recipeService.countRecipeMonthly(startDate));
+    }
+
+    //최근 4개월 레시피 조회수 통계
+    @GetMapping("/recipe/views/monthly")
+    public ResponseEntity<List<BoardMonthlyStatsDTO>> getRecipeViewsMonthlyStats() {
+        LocalDateTime startDate = LocalDateTime.now()
+                .minusMonths(3)
+                .withDayOfMonth(1)
+                .withHour(0).withMinute(0).withSecond(0).withNano(0);
+
+        return ResponseEntity.ok(recipeService.sumRecipeViewsMonthly(startDate));
+    }
+
+    // 최근 4개월 전체 거래글 통계
+    @GetMapping("/trade/monthly")
+    public ResponseEntity<List<BoardMonthlyStatsDTO>> getTradePostMonthlyStats() {
+        LocalDateTime startDate = LocalDateTime.now()
+                .minusMonths(3)
+                .withDayOfMonth(1)
+                .withHour(0).withMinute(0).withSecond(0).withNano(0);
+
+        return ResponseEntity.ok(tradePostService.countTradePostMonthly(startDate));
+    }
+
+    // 최근 4개월 무료 거래글 통계
+    @GetMapping("/trade/free/monthly")
+    public ResponseEntity<List<BoardMonthlyStatsDTO>> getFreeTradePostMonthlyStats() {
+        LocalDateTime startDate = LocalDateTime.now()
+                .minusMonths(3)
+                .withDayOfMonth(1)
+                .withHour(0).withMinute(0).withSecond(0).withNano(0);
+
+        return ResponseEntity.ok(tradePostService.countFreeTradePostMonthly(startDate));
+    }
+
 }

@@ -2,6 +2,7 @@ package com.example.springjwt.tradepost;
 
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
+import com.example.springjwt.admin.dto.BoardMonthlyStatsDTO;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -9,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import com.example.springjwt.util.DistanceUtil;
 
+import java.time.LocalDateTime;
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -259,6 +261,20 @@ public class TradePostService {
     public List<TradePostSimpleResponseDTO> getPostsByUsernameAndStatus(String username, int status) {
         return tradePostRepository.findByUser_UsernameAndStatus(username, status).stream()
                 .map(TradePostSimpleResponseDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    public List<BoardMonthlyStatsDTO> countTradePostMonthly(LocalDateTime startDate) {
+        List<Object[]> raw = tradePostRepository.countTradePostMonthlyRaw(startDate);
+        return raw.stream()
+                .map(row -> new BoardMonthlyStatsDTO((String) row[0], (Long) row[1]))
+                .collect(Collectors.toList());
+    }
+
+    public List<BoardMonthlyStatsDTO> countFreeTradePostMonthly(LocalDateTime startDate) {
+        List<Object[]> raw = tradePostRepository.countFreeTradePostMonthlyRaw(startDate);
+        return raw.stream()
+                .map(row -> new BoardMonthlyStatsDTO((String) row[0], (Long) row[1]))
                 .collect(Collectors.toList());
     }
 

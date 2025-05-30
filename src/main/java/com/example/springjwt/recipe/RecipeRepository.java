@@ -48,4 +48,24 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
             "ORDER BY FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m')")
     List<RecipeMonthlyStatsDTO> findRecentRecipeCounts(@Param("startDate") LocalDateTime startDate);
 
+    // 월별 레시피 개수
+    @Query("""
+    SELECT FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m'), COUNT(r)
+    FROM Recipe r
+    WHERE r.createdAt >= :startDate
+    GROUP BY FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m')
+    ORDER BY FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m')
+""")
+    List<Object[]> countRecipeMonthlyRaw(@Param("startDate") LocalDateTime startDate);
+
+    // 월별 총 조회수
+    @Query("""
+    SELECT FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m'), SUM(r.viewCount)
+    FROM Recipe r
+    WHERE r.createdAt >= :startDate
+    GROUP BY FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m')
+    ORDER BY FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m')
+""")
+    List<Object[]> sumRecipeViewsMonthlyRaw(@Param("startDate") LocalDateTime startDate);
+
 }

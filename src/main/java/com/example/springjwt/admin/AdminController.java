@@ -271,4 +271,58 @@ public class AdminController {
         tradePostService.deletePostByAdmin(postId, requestDTO.getAdminUsername(), requestDTO.getReason());
         return ResponseEntity.ok("삭제 및 로그 기록 완료");
     }
+
+    // [GET] /api/admin/boards
+    // 관리자용 커뮤니티 게시글 조회 (페이징+정렬)
+    // - page: 페이지 번호 (기본 0)
+    // - size: 페이지 크기 (기본 10)
+    // - sortBy: 정렬 기준 (기본 createdAt)
+    // 응답: id, 작성자, 내용, 게시날짜 포함
+    @GetMapping
+    public Page<BoardAdminListResponseDTO> getBoards(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy
+    ) {
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortBy));
+        return boardService.getBoards(pageRequest);
+    }
+
+
+    /* [GET] /api/admin/boards/{boardId}
+     관리자용 게시글 상세 조회 API
+     - boardId: 게시글 ID (PathVariable)
+     - 댓글 리스트 포함
+     - 응답: id, 작성자, 내용, 이미지, 날짜, 좋아요수, 댓글수, 댓글들
+    */
+    @GetMapping("/boards/{boardId}")
+    public ResponseEntity<BoardDetailAdminDTO> getBoardDetail(@PathVariable Long boardId) {
+        return ResponseEntity.ok(boardService.getBoardDetail(boardId));
+    }
+
+    /**
+     * [DELETE] /api/admin/boards/{boardId}
+     * 관리자 커뮤니티 게시글 삭제
+     * - 요청: 관리자 아이디(adminUsername), 삭제 사유(reason)
+     * - 응답: "삭제 및 로그 기록 완료"
+     */
+    @DeleteMapping("/boards/{boardId}")
+    public ResponseEntity<String> deleteBoardAsAdmin(
+            @PathVariable Long boardId,
+            @RequestBody DeleteRequestDTO requestDTO
+    ) {
+        boardService.deleteBoardByAdmin(boardId, requestDTO.getAdminUsername(), requestDTO.getReason());
+        return ResponseEntity.ok("삭제 및 로그 기록 완료");
+    }
+
+    // [DELETE] /api/admin/comments/{commentId}
+    // 관리자 댓글 삭제 (사유 기록 및 댓글수 감소 포함)
+    @DeleteMapping("/comments/{commentId}")
+    public ResponseEntity<String> deleteCommentAsAdmin(
+            @PathVariable Long commentId,
+            @RequestBody DeleteRequestDTO requestDTO
+    ) {
+        boardService.deleteCommentByAdmin(commentId, requestDTO.getAdminUsername(), requestDTO.getReason());
+        return ResponseEntity.ok("댓글 삭제 및 로그 기록 완료");
+    }
 }

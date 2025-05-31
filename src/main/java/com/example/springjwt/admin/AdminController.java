@@ -193,7 +193,7 @@ public class AdminController {
      * - GET /api/admin/users/{userId}
      */
     @GetMapping("/users/{userId}")
-    public UserDetailDTO getUserDetail(@PathVariable int userId) {
+    public UserDetailDTO getUserDetail(@PathVariable int userId){
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("해당 유저를 찾을 수 없습니다."));
 

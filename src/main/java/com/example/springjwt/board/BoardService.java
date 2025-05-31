@@ -2,8 +2,14 @@ package com.example.springjwt.board;
 
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
+import com.example.springjwt.admin.dto.BoardAdminListResponseDTO;
+import com.example.springjwt.admin.dto.BoardCommentResponseDTO;
+import com.example.springjwt.admin.dto.BoardDetailAdminDTO;
 import com.example.springjwt.admin.dto.BoardMonthlyStatsDTO;
+import com.example.springjwt.admin.log.AdminLogService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -21,6 +27,8 @@ public class BoardService {
     private final UserRepository userRepository;
     private final BoardRepository boardRepository;
     private final BoardLikeRepository boardLikeRepository;
+    private final BoardCommentRepository boardCommentRepository;
+    private final AdminLogService adminLogService;
 
     // 작성
     public BoardResponseDTO create(BoardRequestDTO dto, String username) {
@@ -184,6 +192,78 @@ public class BoardService {
                         ((Number) row[1]).longValue() // COUNT는 Long이지만 안전하게 처리
                 ))
                 .collect(Collectors.toList());
+    }
+    public Page<BoardAdminListResponseDTO> getBoards(Pageable pageable) {
+        return boardRepository.findAllBoardsForAdmin(pageable);
+    }
+
+    public BoardDetailAdminDTO getBoardDetail(Long boardId) {
+        Board board = boardRepository.findById(boardId)
+                .orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다."));
+
+        List<BoardCommentResponseDTO> commentDTOs = board.getComments().stream()
+                .map(c -> new BoardCommentResponseDTO(
+                        c.getId(),
+                        c.getUser().getUsername(),
+                        c.getContent(),
+                        c.getCreatedAt()
+                ))
+                .toList();
+
+        return new BoardDetailAdminDTO(
+                board.getId(),
+                board.getWriter().getUsername(),
+                board.getContent(),
+                board.getImageUrls(),
+                board.getLikeCount(),
+                board.getCommentCount(),
+                board.getCreatedAt(),
+                board.getBoardType(),
+                commentDTOs
+        );
+    }
+
+    @Transactional
+    public void deleteBoardByAdmin(Long boardId, String adminUsername, String reason) {
+        Board board = boardRepository.findById(boardId)
+                .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));
+
+        // 1. 댓글 먼저 삭제
+        boardCommentRepository.deleteAllByBoard(board);
+
+        // 2. 좋아요 삭제
+        boardLikeRepository.deleteAllByBoard(board);
+
+        // 3. 게시글 삭제
+        boardRepository.delete(board);
+
+        // 4. 관리자 로그 저장
+        adminLogService.logAdminAction(
+                adminUsername,
+                "DELETE_BOARD",
+                "BOARD",
+                boardId,
+                reason
+        );
+    }
+
+    @Transactional
+    public void deleteCommentByAdmin(Long commentId, String adminUsername, String reason) {
+        BoardComment comment = boardCommentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("댓글이 존재하지 않습니다."));
+
+        Board board = comment.getBoard();
+        board.setCommentCount(Math.max(0, board.getCommentCount() - 1)); // 안전하게 감소
+
+        boardCommentRepository.delete(comment);
+
+        adminLogService.logAdminAction(
+                adminUsername,
+                "DELETE_COMMENT",
+                "BOARD_COMMENT",
+                commentId,
+                reason
+        );
     }
 
 }

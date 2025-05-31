@@ -19,4 +19,5 @@ public interface BoardCommentRepository extends JpaRepository<BoardComment, Long
 """)
     List<Object[]> countCommentMonthly(@Param("startDate") LocalDateTime startDate);
 
+    void deleteAllByBoard(Board board);
 }

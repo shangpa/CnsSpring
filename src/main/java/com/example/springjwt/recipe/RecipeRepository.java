@@ -1,6 +1,7 @@
 package com.example.springjwt.recipe;
 
 import com.example.springjwt.User.UserEntity;
+import com.example.springjwt.admin.dto.RecipeListAdminDTO;
 import com.example.springjwt.admin.dto.RecipeMonthlyStatsDTO;
 import com.example.springjwt.admin.dto.UserRecipeSimpleDTO;
 import org.springframework.data.domain.Page;
@@ -76,5 +77,15 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
     @Query("SELECT new com.example.springjwt.admin.dto.UserRecipeSimpleDTO(r.user.username, r.title, r.createdAt) " +
             "FROM Recipe r WHERE r.user.id = :userId ORDER BY r.createdAt DESC")
     List<UserRecipeSimpleDTO> findRecipesByUserId(int userId);
+
+    @Query("SELECT new com.example.springjwt.admin.dto.RecipeListAdminDTO(r.recipeId, r.user.username, r.title, r.createdAt) " +
+            "FROM Recipe r ORDER BY r.createdAt DESC")
+    Page<RecipeListAdminDTO> findAllForAdmin(Pageable pageable);
+
+    @Query("SELECT new com.example.springjwt.admin.dto.RecipeListAdminDTO(r.recipeId, r.user.username, r.title, r.createdAt) " +
+            "FROM Recipe r " +
+            "WHERE r.title LIKE %:title% " +
+            "ORDER BY r.createdAt DESC")
+    Page<RecipeListAdminDTO> searchByTitleForAdmin(@Param("title") String title, Pageable pageable);
 
 }

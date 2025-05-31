@@ -33,7 +33,7 @@ public class Board {
 
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "board")
     private List<BoardComment> comments = new ArrayList<>();
 
     @Column(nullable = false)

@@ -1,6 +1,7 @@
 package com.example.springjwt.board;
 
 import com.example.springjwt.User.UserEntity;
+import com.example.springjwt.admin.dto.BoardAdminListResponseDTO;
 import com.example.springjwt.admin.dto.BoardMonthlyStatsDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,4 +35,9 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
     ORDER BY FUNCTION('DATE_FORMAT', b.createdAt, '%Y-%m')
 """)
     List<Object[]> countBoardMonthlyRaw(@Param("startDate") LocalDateTime startDate);
+
+    @Query("SELECT new com.example.springjwt.admin.dto.BoardAdminListResponseDTO(b.id, b.writer.username, b.content, b.createdAt) " +
+            "FROM Board b")
+    Page<BoardAdminListResponseDTO> findAllBoardsForAdmin(Pageable pageable);
+
 }

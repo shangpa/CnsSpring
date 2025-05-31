@@ -222,5 +222,53 @@ public class AdminController {
         return recipeRepository.findRecipesByUserId(userId);
     }
 
+    /**
+     * [GET] /api/admin/tradeposts?page=0&size=10&status=0&sortBy=createdAt
+     * 전체 거래글 조회 (status: 0=거래중, 1=거래완료, 생략 시 전체)
+     * 정렬 기준: createdAt, category 등 (기본값: createdAt 내림차순)
+     * 응답: id, username, title, createdAt, category, status 포함
+     */
+    @GetMapping
+    public Page<TradePostListResponseDTO> getTradePostList(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) String sortBy
+    ) {
+        return tradePostService.getTradePosts(page, size, status, sortBy);
+    }
 
+
+    /**
+     * [GET] /api/admin/tradeposts/{postId}
+     * 거래글 상세 조회
+     * 응답: id, username, title, description, createdAt, imageUrls, location, chatCount, viewCount 포함
+     */
+    @GetMapping("/tradeposts/{postId}")
+    public ResponseEntity<TradePostDetailResponseDTO> getTradePostDetail(@PathVariable Long postId) {
+        return ResponseEntity.ok(tradePostService.getTradePostDetail(postId));
+    }
+
+    /** todo 수정해야함
+     * [관리자용 거래글 삭제 API]
+     *
+     * 거래글을 삭제하면서 삭제한 관리자 ID와 사유를 함께 전달받아 로그로 기록합니다.
+     *
+     * 🔹 요청 방식: DELETE
+     * 🔹 요청 URL: /api/admin/tradeposts/{postId}
+     * 🔹 요청 바디:
+     * {
+     *   "adminUsername": "admin01",
+     *   "reason": "허위 게시글로 판단되어 삭제"
+     * }
+     * 🔹 응답: "삭제 및 로그 기록 완료"
+     */
+    @DeleteMapping("/tradeposts/{postId}")
+    public ResponseEntity<String> deleteTradePostAsAdmin(
+            @PathVariable Long postId,
+            @RequestBody DeleteRequestDTO requestDTO
+    ) {
+        tradePostService.deletePostByAdmin(postId, requestDTO.getAdminUsername(), requestDTO.getReason());
+        return ResponseEntity.ok("삭제 및 로그 기록 완료");
+    }
 }

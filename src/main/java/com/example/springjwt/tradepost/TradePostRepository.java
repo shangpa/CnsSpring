@@ -1,6 +1,7 @@
 package com.example.springjwt.tradepost;
 
 import com.example.springjwt.User.UserEntity;
+import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -94,4 +95,9 @@ public interface TradePostRepository extends JpaRepository<TradePost, Long> {
     List<Object[]> countFreeTradePostMonthlyRaw(@Param("startDate") LocalDateTime startDate);
 
     int countByUser(UserEntity user);
+
+    Page<TradePost> findAll(Pageable pageable);
+
+    Page<TradePost> findByStatus(int status, Pageable pageable);
+
 }

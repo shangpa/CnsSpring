@@ -33,9 +33,13 @@ public class TradePostController {
 
     // 거래글 상세 조회
     @GetMapping("/{id}")
-    public ResponseEntity<TradePostDTO> getTradePostById(@PathVariable Long id) {
-        TradePostDTO tradePostDTO = tradePostService.getTradePostById(id);
-        return ResponseEntity.ok(tradePostDTO);
+    public ResponseEntity<TradePostDTO> getTradePostById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        String username = userDetails != null ? userDetails.getUsername() : null;
+        TradePostDTO dto = tradePostService.getTradePostById(id, username);
+        return ResponseEntity.ok(dto);
     }
 
     // 내가 작성한 거래글

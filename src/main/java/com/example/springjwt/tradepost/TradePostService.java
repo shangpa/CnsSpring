@@ -47,9 +47,22 @@ public class TradePostService {
         return tradePostRepository.save(tradePost);
     }
 
-    public TradePostDTO getTradePostById(Long id) {
+    public TradePostDTO getTradePostById(Long id, String username) {
         TradePost tradePost = tradePostRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 거래글이 존재하지 않습니다. ID=" + id));
+
+        if (username != null) {
+            UserEntity user = userRepository.findByUsername(username);
+            if (user != null && user.getLatitude() != null && user.getLongitude() != null
+                    && tradePost.getLatitude() != null && tradePost.getLongitude() != null) {
+                double distance = DistanceUtil.calculateDistance(
+                        user.getLatitude(), user.getLongitude(),
+                        tradePost.getLatitude(), tradePost.getLongitude()
+                );
+                return TradePostDTO.fromEntityWithDistance(tradePost, distance);
+            }
+        }
+
         return TradePostDTO.fromEntity(tradePost);
     }
 

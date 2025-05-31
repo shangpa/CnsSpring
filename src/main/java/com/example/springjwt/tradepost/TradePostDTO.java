@@ -22,6 +22,8 @@ public class TradePostDTO {
     private String imageUrls;       // 이미지 URL 목록 (JSON 문자열)
     private String createdAt;
     private Double distance;
+    private Double latitude;
+    private Double longitude;
 
     // DTO → Entity (User는 외부에서 주입)
     public TradePost toEntity() {
@@ -51,23 +53,27 @@ public class TradePostDTO {
                 .location(tradePost.getLocation())
                 .imageUrls(tradePost.getImageUrls())
                 .createdAt(tradePost.getCreatedAt().toString())
+                .latitude(tradePost.getLatitude())
+                .longitude(tradePost.getLongitude())
                 .build();
     }
 
     // 거리 포함한 DTO 변환 메서드 따로 정의
-    public static TradePostDTO fromEntityWithDistance(TradePost tradePost, double distance) {
+    public static TradePostDTO fromEntityWithDistance(TradePost post, double distance) {
         return TradePostDTO.builder()
-                .tradePostId(tradePost.getTradePostId())
-                .writer(tradePost.getUser().getUsername())
-                .category(tradePost.getCategory())
-                .title(tradePost.getTitle())
-                .quantity(tradePost.getQuantity())
-                .price(tradePost.getPrice())
-                .purchaseDate(tradePost.getPurchaseDate())
-                .description(tradePost.getDescription())
-                .location(tradePost.getLocation())
-                .imageUrls(tradePost.getImageUrls())
-                .createdAt(tradePost.getCreatedAt().toString())
+                .tradePostId(post.getTradePostId())
+                .writer(post.getUser().getUsername())
+                .category(post.getCategory())
+                .title(post.getTitle())
+                .quantity(post.getQuantity())
+                .price(post.getPrice())
+                .purchaseDate(post.getPurchaseDate())
+                .description(post.getDescription())
+                .location(post.getLocation())
+                .imageUrls(post.getImageUrls())
+                .createdAt(post.getCreatedAt().toString())
+                .latitude(post.getLatitude())
+                .longitude(post.getLongitude())
                 .distance(distance)
                 .build();
     }

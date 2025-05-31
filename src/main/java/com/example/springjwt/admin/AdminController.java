@@ -278,7 +278,7 @@ public class AdminController {
     // - size: 페이지 크기 (기본 10)
     // - sortBy: 정렬 기준 (기본 createdAt)
     // 응답: id, 작성자, 내용, 게시날짜 포함
-    @GetMapping
+    @GetMapping("/tradeposts")
     public Page<BoardAdminListResponseDTO> getBoards(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -324,5 +324,40 @@ public class AdminController {
     ) {
         boardService.deleteCommentByAdmin(commentId, requestDTO.getAdminUsername(), requestDTO.getReason());
         return ResponseEntity.ok("댓글 삭제 및 로그 기록 완료");
+    }
+
+    /**
+     * 🔹 관리자용 레시피 리스트 조회 API
+     * - 페이지 번호(page)와 페이지 크기(size)를 기준으로 레시피 리스트를 페이징 처리하여 반환
+     * - 반환 필드: recipeId, username(작성자 아이디), title, createdAt(작성일시)
+     *
+     * @param page 조회할 페이지 번호 (기본값: 0)
+     * @param size 한 페이지당 레시피 개수 (기본값: 10)
+     * @return Page<RecipeListAdminDTO> 형태로 페이징된 레시피 정보 반환
+     */
+    @GetMapping("/recipes")
+    public ResponseEntity<Page<RecipeListAdminDTO>> getAllRecipesForAdmin(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok(adminRecipeService.getRecipeListForAdmin(page, size));
+    }
+
+    /**
+     * 🔍 관리자용 레시피 제목 검색 API
+     * - 제목에 특정 키워드가 포함된 레시피를 검색
+     *
+     * @param title 검색할 제목 키워드 (필수)
+     * @param page 페이지 번호 (기본값: 0)
+     * @param size 페이지 크기 (기본값: 10)
+     * @return 제목에 키워드가 포함된 레시피 목록 (페이징)
+     */
+    @GetMapping("/search")
+    public ResponseEntity<Page<RecipeListAdminDTO>> searchRecipesByTitle(
+            @RequestParam String title,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok(adminRecipeService.searchRecipesByTitle(title, page, size));
     }
 }

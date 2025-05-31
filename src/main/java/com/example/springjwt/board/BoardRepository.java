@@ -36,7 +36,7 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
 """)
     List<Object[]> countBoardMonthlyRaw(@Param("startDate") LocalDateTime startDate);
 
-    @Query("SELECT new com.example.springjwt.admin.dto.BoardAdminListResponseDTO(b.id, b.user.username, b.content, b.createdAt) " +
+    @Query("SELECT new com.example.springjwt.admin.dto.BoardAdminListResponseDTO(b.id, b.writer.username, b.content, b.createdAt) " +
             "FROM Board b")
     Page<BoardAdminListResponseDTO> findAllBoardsForAdmin(Pageable pageable);
 

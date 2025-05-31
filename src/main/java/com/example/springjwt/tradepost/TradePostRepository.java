@@ -1,12 +1,14 @@
 package com.example.springjwt.tradepost;
 
 import com.example.springjwt.User.UserEntity;
+import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -71,5 +73,31 @@ public interface TradePostRepository extends JpaRepository<TradePost, Long> {
 
     List<TradePost> findByUser_Username(String username);
     List<TradePost> findByUser_UsernameAndStatus(String username, int status);
+
+    // 전체 거래글 월별 수
+    @Query("""
+    SELECT FUNCTION('DATE_FORMAT', t.createdAt, '%Y-%m'), COUNT(t)
+    FROM TradePost t
+    WHERE t.createdAt >= :startDate
+    GROUP BY FUNCTION('DATE_FORMAT', t.createdAt, '%Y-%m')
+    ORDER BY FUNCTION('DATE_FORMAT', t.createdAt, '%Y-%m')
+""")
+    List<Object[]> countTradePostMonthlyRaw(@Param("startDate") LocalDateTime startDate);
+
+    // 가격이 0원인 거래글 월별 수
+    @Query("""
+    SELECT FUNCTION('DATE_FORMAT', t.createdAt, '%Y-%m'), COUNT(t)
+    FROM TradePost t
+    WHERE t.createdAt >= :startDate AND t.price = 0
+    GROUP BY FUNCTION('DATE_FORMAT', t.createdAt, '%Y-%m')
+    ORDER BY FUNCTION('DATE_FORMAT', t.createdAt, '%Y-%m')
+""")
+    List<Object[]> countFreeTradePostMonthlyRaw(@Param("startDate") LocalDateTime startDate);
+
+    int countByUser(UserEntity user);
+
+    Page<TradePost> findAll(Pageable pageable);
+
+    Page<TradePost> findByStatus(int status, Pageable pageable);
 
 }

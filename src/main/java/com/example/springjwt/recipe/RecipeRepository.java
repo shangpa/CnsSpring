@@ -2,6 +2,9 @@ package com.example.springjwt.recipe;
 
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.admin.dto.RecipeMonthlyStatsDTO;
+import com.example.springjwt.admin.dto.UserRecipeSimpleDTO;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -47,5 +50,31 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
             "GROUP BY FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m') " +
             "ORDER BY FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m')")
     List<RecipeMonthlyStatsDTO> findRecentRecipeCounts(@Param("startDate") LocalDateTime startDate);
+
+    // 월별 레시피 개수
+    @Query("""
+    SELECT FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m'), COUNT(r)
+    FROM Recipe r
+    WHERE r.createdAt >= :startDate
+    GROUP BY FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m')
+    ORDER BY FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m')
+""")
+    List<Object[]> countRecipeMonthlyRaw(@Param("startDate") LocalDateTime startDate);
+
+    // 월별 총 조회수
+    @Query("""
+    SELECT FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m'), SUM(r.viewCount)
+    FROM Recipe r
+    WHERE r.createdAt >= :startDate
+    GROUP BY FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m')
+    ORDER BY FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m')
+""")
+    List<Object[]> sumRecipeViewsMonthlyRaw(@Param("startDate") LocalDateTime startDate);
+
+    int countByUser(UserEntity user);
+
+    @Query("SELECT new com.example.springjwt.admin.dto.UserRecipeSimpleDTO(r.user.username, r.title, r.createdAt) " +
+            "FROM Recipe r WHERE r.user.id = :userId ORDER BY r.createdAt DESC")
+    List<UserRecipeSimpleDTO> findRecipesByUserId(int userId);
 
 }

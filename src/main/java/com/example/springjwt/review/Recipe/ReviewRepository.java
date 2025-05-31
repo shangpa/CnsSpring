@@ -20,4 +20,5 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     List<Review> findByUser(UserEntity user);
     //마이페이지 - 리뷰삭제
     List<Review> findByUserAndRecipe_Category(UserEntity user, com.example.springjwt.recipe.RecipeCategory category);
+    int countByUser(UserEntity user);
 }

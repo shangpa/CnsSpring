@@ -11,4 +11,6 @@ public interface SavedTradePostRepository extends JpaRepository<SavedTradePost, 
     Optional<SavedTradePost> findByUserAndTradePost(UserEntity user, TradePost tradePost);
     List<SavedTradePost> findByUser(UserEntity user);
     void deleteByUserAndTradePost(UserEntity user, TradePost tradePost);
+    int countByTradePost(TradePost tradePost);
+    void deleteAllByTradePost(TradePost post);
 }

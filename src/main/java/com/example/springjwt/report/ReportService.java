@@ -2,12 +2,17 @@ package com.example.springjwt.report;
 
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
+import com.example.springjwt.admin.dto.BoardMonthlyStatsDTO;
 import com.example.springjwt.board.Board;
 import com.example.springjwt.board.BoardComment;
 import com.example.springjwt.board.BoardCommentRepository;
 import com.example.springjwt.board.BoardRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,5 +36,13 @@ public class ReportService {
             report.setBoardComment(comment);
         }
         reportRepository.save(report);
+    }
+
+    public List<BoardMonthlyStatsDTO> countReportMonthly(LocalDateTime startDate) {
+        List<Object[]> rawData = reportRepository.countReportMonthlyRaw(startDate);
+
+        return rawData.stream()
+                .map(row -> new BoardMonthlyStatsDTO((String) row[0], (Long) row[1]))
+                .collect(Collectors.toList());
     }
 }

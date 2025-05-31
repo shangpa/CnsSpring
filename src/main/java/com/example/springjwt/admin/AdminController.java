@@ -1,17 +1,28 @@
 package com.example.springjwt.admin;
 
 import com.example.springjwt.User.JoinService;
-import com.example.springjwt.admin.dto.BoardMonthlyStatsDTO;
-import com.example.springjwt.admin.dto.RecipeMonthlyStatsDTO;
+import com.example.springjwt.User.UserEntity;
+import com.example.springjwt.User.UserRepository;
+import com.example.springjwt.User.UserService;
+import com.example.springjwt.admin.dto.*;
 import com.example.springjwt.board.BoardDetailResponseDTO;
 import com.example.springjwt.board.BoardRepository;
 import com.example.springjwt.board.BoardService;
 import com.example.springjwt.dto.JoinDTO;
+import com.example.springjwt.recipe.RecipeRepository;
 import com.example.springjwt.recipe.RecipeSearchResponseDTO;
 import com.example.springjwt.recipe.RecipeService;
+import com.example.springjwt.report.ReportRepository;
+import com.example.springjwt.report.ReportService;
+import com.example.springjwt.review.Recipe.ReviewRepository;
+import com.example.springjwt.tradepost.TradePostRepository;
 import com.example.springjwt.tradepost.TradePostService;
 import com.example.springjwt.tradepost.TradePostSimpleResponseDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,8 +41,11 @@ public class AdminController {
     private final AdminRecipeService adminRecipeService;
     private final TradePostService tradePostService;
     private final BoardService boardService;
-    private final BoardRepository boardRepository;
-
+    private final ReportService reportService;
+    private final UserRepository userRepository;
+    private final RecipeRepository recipeRepository;
+    private final TradePostRepository tradePostRepository;
+    private final ReviewRepository reviewRepository;
     // 관리자 회원가입
     @PostMapping("/join")
     public ResponseEntity<String> adminJoin(@RequestBody JoinDTO joinDTO) {
@@ -74,6 +88,7 @@ public class AdminController {
         return ResponseEntity.ok(boardService.getTop3PopularBoardsForAdmin());
     }
 
+    //최근 4개월 커뮤니티 게시글 통계
     @GetMapping("/board/monthly")
     public ResponseEntity<List<BoardMonthlyStatsDTO>> getBoardMonthlyStats() {
         LocalDateTime startDate = LocalDateTime.now()
@@ -86,5 +101,174 @@ public class AdminController {
 
         List<BoardMonthlyStatsDTO> stats = boardService.countBoardMonthly(startDate);
         return ResponseEntity.ok(stats);
+    }
+
+    //최근 4개월 커뮤니티 댓글 통계
+    @GetMapping("/comment/monthly")
+    public ResponseEntity<List<BoardMonthlyStatsDTO>> getCommentMonthlyStats() {
+        LocalDateTime startDate = LocalDateTime.now()
+                .minusMonths(3)
+                .withDayOfMonth(1)
+                .withHour(0)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+
+        List<BoardMonthlyStatsDTO> stats = adminRecipeService.countCommentMonthly(startDate);
+        return ResponseEntity.ok(stats);
+    }
+
+    //최근 4개월 신고 통계
+    @GetMapping("/report/monthly")
+    public ResponseEntity<List<BoardMonthlyStatsDTO>> getReportMonthlyStats() {
+        LocalDateTime startDate = LocalDateTime.now()
+                .minusMonths(3)
+                .withDayOfMonth(1)
+                .withHour(0).withMinute(0).withSecond(0).withNano(0);
+
+        List<BoardMonthlyStatsDTO> stats = reportService.countReportMonthly(startDate);
+        return ResponseEntity.ok(stats);
+    }
+
+    //최근 4개월 레시피 통계
+    @GetMapping("/recipe/monthly")
+    public ResponseEntity<List<BoardMonthlyStatsDTO>> getRecipeMonthlyStats() {
+        LocalDateTime startDate = LocalDateTime.now()
+                .minusMonths(3)
+                .withDayOfMonth(1)
+                .withHour(0).withMinute(0).withSecond(0).withNano(0);
+
+        return ResponseEntity.ok(recipeService.countRecipeMonthly(startDate));
+    }
+
+    //최근 4개월 레시피 조회수 통계
+    @GetMapping("/recipe/views/monthly")
+    public ResponseEntity<List<BoardMonthlyStatsDTO>> getRecipeViewsMonthlyStats() {
+        LocalDateTime startDate = LocalDateTime.now()
+                .minusMonths(3)
+                .withDayOfMonth(1)
+                .withHour(0).withMinute(0).withSecond(0).withNano(0);
+
+        return ResponseEntity.ok(recipeService.sumRecipeViewsMonthly(startDate));
+    }
+
+    // 최근 4개월 전체 거래글 통계
+    @GetMapping("/trade/monthly")
+    public ResponseEntity<List<BoardMonthlyStatsDTO>> getTradePostMonthlyStats() {
+        LocalDateTime startDate = LocalDateTime.now()
+                .minusMonths(3)
+                .withDayOfMonth(1)
+                .withHour(0).withMinute(0).withSecond(0).withNano(0);
+
+        return ResponseEntity.ok(tradePostService.countTradePostMonthly(startDate));
+    }
+
+    // 최근 4개월 무료 거래글 통계
+    @GetMapping("/trade/free/monthly")
+    public ResponseEntity<List<BoardMonthlyStatsDTO>> getFreeTradePostMonthlyStats() {
+        LocalDateTime startDate = LocalDateTime.now()
+                .minusMonths(3)
+                .withDayOfMonth(1)
+                .withHour(0).withMinute(0).withSecond(0).withNano(0);
+
+        return ResponseEntity.ok(tradePostService.countFreeTradePostMonthly(startDate));
+    }
+
+    /**
+     * 관리자용 회원 리스트 조회 (페이징)
+     * - 응답: 회원 id, 이름(name), 아이디(username)
+     * - GET /api/admin/users?page=0&size=10
+     */
+    @GetMapping("/users")
+    public Page<UserListDTO> getUserList(@RequestParam(defaultValue = "0") int page,
+                                         @RequestParam(defaultValue = "10") int size) {
+        return userRepository.findAllBy(
+                PageRequest.of(page, size, Sort.by("id").descending())
+        );
+    }
+
+    /**
+     * 관리자용 회원 상세 정보 조회
+     * - 응답: 이름, 아이디, 가입일, 포인트, 작성한 레시피 수, 거래글 수, 리뷰 수
+     * - GET /api/admin/users/{userId}
+     */
+    @GetMapping("/users/{userId}")
+    public UserDetailDTO getUserDetail(@PathVariable int userId) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("해당 유저를 찾을 수 없습니다."));
+
+        int recipeCount = recipeRepository.countByUser(user);
+        int tradePostCount = tradePostRepository.countByUser(user);
+        int reviewCount = reviewRepository.countByUser(user);
+
+        return new UserDetailDTO(
+                user.getName(),
+                user.getUsername(),
+                user.getCreatedAt(),
+                user.getPoint(),
+                recipeCount,
+                tradePostCount,
+                reviewCount
+        );
+    }
+
+    /**
+     * 특정 회원이 작성한 레시피 리스트 조회
+     * - 응답: username, 레시피 제목, 작성일
+     * - GET /api/admin/users/{userId}/recipes
+     */
+    @GetMapping("/users/{userId}/recipes")
+    public List<UserRecipeSimpleDTO> getUserRecipes(@PathVariable int userId) {
+        return recipeRepository.findRecipesByUserId(userId);
+    }
+
+    /**
+     * [GET] /api/admin/tradeposts?page=0&size=10&status=0&sortBy=createdAt
+     * 전체 거래글 조회 (status: 0=거래중, 1=거래완료, 생략 시 전체)
+     * 정렬 기준: createdAt, category 등 (기본값: createdAt 내림차순)
+     * 응답: id, username, title, createdAt, category, status 포함
+     */
+    @GetMapping
+    public Page<TradePostListResponseDTO> getTradePostList(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) String sortBy
+    ) {
+        return tradePostService.getTradePosts(page, size, status, sortBy);
+    }
+
+
+    /**
+     * [GET] /api/admin/tradeposts/{postId}
+     * 거래글 상세 조회
+     * 응답: id, username, title, description, createdAt, imageUrls, location, chatCount, viewCount 포함
+     */
+    @GetMapping("/tradeposts/{postId}")
+    public ResponseEntity<TradePostDetailResponseDTO> getTradePostDetail(@PathVariable Long postId) {
+        return ResponseEntity.ok(tradePostService.getTradePostDetail(postId));
+    }
+
+    /** todo 수정해야함
+     * [관리자용 거래글 삭제 API]
+     *
+     * 거래글을 삭제하면서 삭제한 관리자 ID와 사유를 함께 전달받아 로그로 기록합니다.
+     *
+     * 🔹 요청 방식: DELETE
+     * 🔹 요청 URL: /api/admin/tradeposts/{postId}
+     * 🔹 요청 바디:
+     * {
+     *   "adminUsername": "admin01",
+     *   "reason": "허위 게시글로 판단되어 삭제"
+     * }
+     * 🔹 응답: "삭제 및 로그 기록 완료"
+     */
+    @DeleteMapping("/tradeposts/{postId}")
+    public ResponseEntity<String> deleteTradePostAsAdmin(
+            @PathVariable Long postId,
+            @RequestBody DeleteRequestDTO requestDTO
+    ) {
+        tradePostService.deletePostByAdmin(postId, requestDTO.getAdminUsername(), requestDTO.getReason());
+        return ResponseEntity.ok("삭제 및 로그 기록 완료");
     }
 }

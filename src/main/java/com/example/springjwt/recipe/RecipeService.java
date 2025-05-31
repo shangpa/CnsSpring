@@ -1,5 +1,6 @@
 package com.example.springjwt.recipe;
 
+import com.example.springjwt.admin.dto.BoardMonthlyStatsDTO;
 import com.example.springjwt.admin.dto.RecipeMonthlyStatsDTO;
 import com.example.springjwt.fridge.Fridge;
 import com.example.springjwt.fridge.FridgeRepository;
@@ -223,6 +224,20 @@ public class  RecipeService {
         LocalDateTime fourMonthsAgo = now.minusMonths(3).withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
 
         return recipeRepository.findRecentRecipeCounts(fourMonthsAgo);
+    }
+
+    public List<BoardMonthlyStatsDTO> countRecipeMonthly(LocalDateTime startDate) {
+        List<Object[]> raw = recipeRepository.countRecipeMonthlyRaw(startDate);
+        return raw.stream()
+                .map(row -> new BoardMonthlyStatsDTO((String) row[0], (Long) row[1]))
+                .collect(Collectors.toList());
+    }
+
+    public List<BoardMonthlyStatsDTO> sumRecipeViewsMonthly(LocalDateTime startDate) {
+        List<Object[]> raw = recipeRepository.sumRecipeViewsMonthlyRaw(startDate);
+        return raw.stream()
+                .map(row -> new BoardMonthlyStatsDTO((String) row[0], (Long) row[1]))
+                .collect(Collectors.toList());
     }
 
 }

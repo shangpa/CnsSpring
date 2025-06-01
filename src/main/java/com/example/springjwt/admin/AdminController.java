@@ -202,6 +202,7 @@ public class AdminController {
         int reviewCount = reviewRepository.countByUser(user);
 
         return new UserDetailDTO(
+                user.getId(),
                 user.getName(),
                 user.getUsername(),
                 user.getCreatedAt(),

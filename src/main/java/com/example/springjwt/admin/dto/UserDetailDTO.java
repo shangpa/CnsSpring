@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 @Getter
 @AllArgsConstructor
 public class UserDetailDTO {
+    private int id;
     private String name;
     private String username;
     private LocalDateTime createdAt;

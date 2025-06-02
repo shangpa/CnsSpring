@@ -74,6 +74,7 @@ public class SecurityConfig {
                                 "/api/trade-posts", "/api/trade-posts/**", "/api/main",
                                 "/api/boards/mine", "/trade-posts/popular", "/ws/**"
                         ).permitAll()
+                        .requestMatchers("/api/trade-posts/*/complete-request").authenticated()
                         .requestMatchers("/api/user/**", "/api/fridges/ocr").authenticated()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()

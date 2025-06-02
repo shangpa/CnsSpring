@@ -23,19 +23,19 @@ public class FCMController {
     @PostMapping("/token")
     public ResponseEntity<Void> saveToken(@RequestHeader("Authorization") String token,
                                           @RequestBody FcmTokenRequestDTO request) {
-        String username = jwtUtil.getUsername(token); // username
+        String username = jwtUtil.getUsername(token);
         UserEntity user = userRepository.findByUsername(username);
-        deviceTokenRepository.deleteByFcmToken(request.getToken());
 
+        // 중복 저장 방지
         if (!deviceTokenRepository.existsByUserAndFcmToken(user, request.getToken())) {
-        DeviceToken deviceToken = new DeviceToken();
-        deviceToken.setFcmToken(request.getToken());
-        deviceToken.setPlatform(request.getPlatform());
-        deviceToken.setUser(user);
-        deviceToken.setUpdatedAt(LocalDateTime.now());
-
-        deviceTokenRepository.save(deviceToken);
+            DeviceToken deviceToken = new DeviceToken();
+            deviceToken.setFcmToken(request.getToken());
+            deviceToken.setPlatform(request.getPlatform());
+            deviceToken.setUser(user);
+            deviceToken.setUpdatedAt(LocalDateTime.now());
+            deviceTokenRepository.save(deviceToken);
         }
+
         return ResponseEntity.ok().build();
     }
 
@@ -61,10 +61,7 @@ public class FCMController {
         if (user == null) {
             return ResponseEntity.badRequest().build();
         }
-
-        // 해당 유저의 이 FCM 토큰만 삭제
-        deviceTokenRepository.deleteByUserAndFcmToken(user, request.getToken());
-
+        fcmService.deleteFcmToken(user, request.getToken());
         return ResponseEntity.ok().build();
     }
 }

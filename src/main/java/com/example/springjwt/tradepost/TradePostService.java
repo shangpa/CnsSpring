@@ -10,6 +10,8 @@ import com.example.springjwt.chat.ChatMessageRepository;
 import com.example.springjwt.chat.ChatMessageService;
 import com.example.springjwt.chat.ChatRoom;
 import com.example.springjwt.chat.ChatRoomRepository;
+import com.example.springjwt.point.PointActionType;
+import com.example.springjwt.point.PointService;
 import com.example.springjwt.review.TradePost.TpReviewRepository;
 import com.example.springjwt.tradepost.saved.SavedTradePostRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -40,6 +42,7 @@ public class TradePostService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final TpReviewRepository tpReviewRepository;
+    private final PointService pointService;
 
     public TradePost create(TradePostDTO dto, String username) {
         UserEntity user = userRepository.findByUsername(username);
@@ -250,29 +253,33 @@ public class TradePostService {
     }
 
     @Transactional
-    public TradePost completeTradePost(Long postId, long buyerId) {
-        TradePost post = tradePostRepository.findById(postId).orElseThrow();
-        if (post.getStatus() != TradePost.STATUS_ONGOING) {
-            throw new IllegalStateException("이미 거래 완료된 게시글입니다.");
+    public TradePost completeTradePost(Long postId, Long buyerId) {
+        TradePost post = tradePostRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("거래글이 존재하지 않습니다."));
+
+        if (post.getStatus() == TradePost.STATUS_COMPLETED) {
+            throw new IllegalStateException("이미 거래가 완료된 게시글입니다.");
         }
 
-        UserEntity buyer = userRepository.findById((int)buyerId).orElseThrow();
+        UserEntity buyer = userRepository.findById(Math.toIntExact(buyerId))
+                .orElseThrow(() -> new IllegalArgumentException("구매자가 존재하지 않습니다."));
+
         UserEntity seller = post.getUser();
+        int price = post.getPrice();
 
-        int point = post.getPrice();
-        if (buyer.getPoint() < point) {
-            throw new IllegalStateException("구매자의 포인트가 부족합니다.");
-        }
+        // 1. 포인트 차감 (구매자)
+        pointService.usePoint(buyer, price, "거래 지출 - " + post.getTitle());
 
-        // 포인트 이전
-        buyer.setPoint(buyer.getPoint() - point);
-        seller.setPoint(seller.getPoint() + point);
+        // 🟢 판매자 포인트 적립
+        pointService.addPoint(seller, PointActionType.TRADE_COMPLETE, price, "거래 수익 - " + post.getTitle());
 
-        // 거래글 상태 업데이트
+        // 3. 거래 상태 변경
         post.setStatus(TradePost.STATUS_COMPLETED);
-        post.setBuyer(buyer);
 
-        return post;
+        // 4. 구매자 정보 저장 (필드가 있다면)
+        post.setBuyer(buyer); // TradePost에 buyer 필드 필요
+
+        return tradePostRepository.save(post);
     }
     public List<TradePostSimpleResponseDTO> getMyPurchasedPosts(String username) {
         UserEntity user = userRepository.findByUsername(username);

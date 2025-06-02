@@ -23,6 +23,7 @@ public class PointHistory {
     private UserEntity user;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 100)
     private PointActionType action;
 
     private int pointChange; // +10 또는 -5 등

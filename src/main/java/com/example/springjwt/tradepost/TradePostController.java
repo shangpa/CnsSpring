@@ -130,12 +130,10 @@ public class TradePostController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/{id}/complete-request")
-    public ResponseEntity<?> requestComplete(
-            @PathVariable Long id,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        tradeCompleteRequestService.createRequest(id, userDetails.getUsername());
-        return ResponseEntity.ok().build();
+    @PostMapping("/{postId}/complete-request")
+    public ResponseEntity<String> requestComplete(@PathVariable Long postId,
+                                                  @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return tradeCompleteRequestService.createRequest(postId, userDetails.getUsername());
     }
 
     @GetMapping("/{id}/complete-requests")

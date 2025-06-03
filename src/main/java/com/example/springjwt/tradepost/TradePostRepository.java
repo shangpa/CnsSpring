@@ -126,4 +126,6 @@ public interface TradePostRepository extends JpaRepository<TradePost, Long> {
             @Param("keyword") String keyword,
             Pageable pageable
     );
+
+
 }

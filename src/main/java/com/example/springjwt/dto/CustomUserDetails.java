@@ -2,6 +2,7 @@ package com.example.springjwt.dto;
 
 import com.example.springjwt.User.UserEntity;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.Collections;
@@ -22,7 +23,6 @@ public class CustomUserDetails implements UserDetails {
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return Collections.singleton(() -> user.getRole());
     }
-
     @Override
     public String getPassword() {
         return user.getPassword();

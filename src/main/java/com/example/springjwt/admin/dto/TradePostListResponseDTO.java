@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 @Getter @Setter
 @AllArgsConstructor
 public class TradePostListResponseDTO {
-    private Long id;
+    private Long tradePostId;
     private String username;
     private String title;
     private LocalDateTime createdAt;

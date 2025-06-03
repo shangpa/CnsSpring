@@ -368,7 +368,8 @@ public class TradePostService {
                 imageUrls,
                 tradePost.getLocation(),
                 chatCount,
-                tradePost.getViewCount()
+                tradePost.getViewCount(),
+                tradePost.getStatus()
         );
     }
 

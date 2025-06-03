@@ -295,7 +295,7 @@ public class AdminController {
      * 정렬 기준: createdAt, category 등 (기본값: createdAt 내림차순)
      * 응답: id, username, title, createdAt, category, status 포함
      */
-    @GetMapping
+    @GetMapping("/tradeposts")
     public Page<TradePostListResponseDTO> getTradePostList(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,

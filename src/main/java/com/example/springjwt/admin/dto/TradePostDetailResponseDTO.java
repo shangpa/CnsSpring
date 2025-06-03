@@ -11,7 +11,7 @@ import java.util.List;
 @Setter
 @AllArgsConstructor
 public class TradePostDetailResponseDTO {
-    private Long id;
+    private Long tradePostId;
     private String username;
     private String title;
     private String description;
@@ -20,4 +20,6 @@ public class TradePostDetailResponseDTO {
     private String location;
     private int chatCount;
     private int viewCount;
+    private int status; // 0: 거래중, 1: 거래완료
+
 }

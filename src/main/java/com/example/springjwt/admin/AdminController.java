@@ -722,4 +722,69 @@ public class AdminController {
     public ResponseEntity<List<RecipeStatDTO>> getCategoryStats() {
         return ResponseEntity.ok(recipeService.getCategoryStats());
     }
+
+    /**
+     * [GET] /api/admin/reports/boards
+     * 게시글 신고 리스트 조회 API (페이징)
+     * @return 최신순 정렬된 게시글 신고 리스트
+     */
+    @GetMapping("/reports/boards")
+    public Page<ReportResponseDTO> getBoardReports(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return reportService.getBoardReports(pageable);
+    }
+
+    /**
+     * [GET] /api/admin/reports/comments
+     * 댓글 신고 리스트 조회 API (페이징)
+     * @return 최신순 정렬된 댓글 신고 리스트
+     */
+    @GetMapping("/reports/comments")
+    public Page<ReportResponseDTO> getCommentReports(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return reportService.getCommentReports(pageable);
+    }
+
+    /**
+     * [GET] /api/admin/reports/boards/search
+     * 게시글 신고 검색 API
+     *
+     * @param keyword 검색 키워드 (필수)
+     * @return 키워드가 포함된 게시글 신고 리스트 (최신순)
+     * 예시: /api/admin/reports/boards/search?keyword=욕설&page=0&size=10
+     */
+    @GetMapping("/reports/boards/search")
+    public Page<ReportResponseDTO> searchBoardReports(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return reportService.searchBoardReports(keyword, pageable);
+    }
+
+    /**
+     * [GET] /api/admin/reports/comments/search
+     * 댓글 신고 검색 API
+     *
+     * @param keyword 검색 키워드 (필수)
+     * @return 키워드가 포함된 댓글 신고 리스트 (최신순)
+     * 예시: /api/admin/reports/comments/search?keyword=비속어&page=0&size=10
+     */
+    @GetMapping("/reports/comments/search")
+    public Page<ReportResponseDTO> searchCommentReports(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return reportService.searchCommentReports(keyword, pageable);
+    }
+
 }

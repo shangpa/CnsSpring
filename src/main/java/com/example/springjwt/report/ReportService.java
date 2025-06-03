@@ -3,11 +3,14 @@ package com.example.springjwt.report;
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
 import com.example.springjwt.admin.dto.BoardMonthlyStatsDTO;
+import com.example.springjwt.admin.dto.ReportResponseDTO;
 import com.example.springjwt.board.Board;
 import com.example.springjwt.board.BoardComment;
 import com.example.springjwt.board.BoardCommentRepository;
 import com.example.springjwt.board.BoardRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -44,5 +47,24 @@ public class ReportService {
         return rawData.stream()
                 .map(row -> new BoardMonthlyStatsDTO((String) row[0], (Long) row[1]))
                 .collect(Collectors.toList());
+    }
+    public Page<ReportResponseDTO> getBoardReports(Pageable pageable) {
+        return reportRepository.findByBoardCommentIsNull(pageable)
+                .map(ReportResponseDTO::fromBoardReport);
+    }
+
+    public Page<ReportResponseDTO> getCommentReports(Pageable pageable) {
+        return reportRepository.findByBoardCommentIsNotNull(pageable)
+                .map(ReportResponseDTO::fromCommentReport);
+    }
+
+    public Page<ReportResponseDTO> searchBoardReports(String keyword, Pageable pageable) {
+        return reportRepository.searchBoardReports(keyword, pageable)
+                .map(ReportResponseDTO::fromBoardReport);
+    }
+
+    public Page<ReportResponseDTO> searchCommentReports(String keyword, Pageable pageable) {
+        return reportRepository.searchCommentReports(keyword, pageable)
+                .map(ReportResponseDTO::fromCommentReport);
     }
 }

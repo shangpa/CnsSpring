@@ -74,9 +74,10 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
 
     int countByUser(UserEntity user);
 
-    @Query("SELECT new com.example.springjwt.admin.dto.UserRecipeSimpleDTO(r.user.username, r.title, r.createdAt) " +
-            "FROM Recipe r WHERE r.user.id = :userId ORDER BY r.createdAt DESC")
+    @Query("SELECT new com.example.springjwt.admin.dto.UserRecipeSimpleDTO(r.recipeId, u.username, r.title, r.createdAt) " +
+            "FROM Recipe r JOIN r.user u WHERE u.id = :userId")
     Page<UserRecipeSimpleDTO> findRecipesByUserId(@Param("userId") int userId, Pageable pageable);
+
 
     @Query("SELECT new com.example.springjwt.admin.dto.RecipeListAdminDTO(r.recipeId, r.user.username, r.title, r.createdAt) " +
             "FROM Recipe r ORDER BY r.createdAt DESC")
@@ -88,7 +89,7 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
             "ORDER BY r.createdAt DESC")
     Page<RecipeListAdminDTO> searchByTitleForAdmin(@Param("title") String title, Pageable pageable);
 
-    @Query("SELECT new com.example.springjwt.admin.dto.UserRecipeSimpleDTO(r.user.username, r.title, r.createdAt) " +
+    @Query("SELECT new com.example.springjwt.admin.dto.UserRecipeSimpleDTO(r.recipeId,r.user.username, r.title, r.createdAt) " +
             "FROM Recipe r WHERE r.user.id = :userId AND r.title LIKE %:keyword% ORDER BY r.createdAt DESC")
     Page<UserRecipeSimpleDTO> findRecipesByUserIdAndTitleContains(@Param("userId") int userId,
                                                                   @Param("keyword") String keyword,

@@ -318,7 +318,7 @@ public class AdminController {
     // - size: 페이지 크기 (기본 10)
     // - sortBy: 정렬 기준 (기본 createdAt)
     // 응답: id, 작성자, 내용, 게시날짜 포함
-    @GetMapping("/tradeposts")
+    @GetMapping("boards")
     public Page<BoardAdminListResponseDTO> getBoards(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,

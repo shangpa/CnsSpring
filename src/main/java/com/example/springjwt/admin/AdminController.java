@@ -213,6 +213,24 @@ public class AdminController {
                         user.getUsername()
                 ));
     }
+    
+    /**
+     * 관리자용 회원 검색 조회 (페이징)
+     * - 응답: 회원 id, 이름(name), 아이디(username)
+     * - GET /admin/users/search?keyword=홍&page=0&size=10
+     */
+    @GetMapping("/users/search")
+    public Page<UserListDTO> searchUsers(@RequestParam String keyword,
+                                         @RequestParam(defaultValue = "0") int page,
+                                         @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        return userRepository.searchUsersExcludingAdminAndBlocked(keyword, pageable)
+                .map(user -> new UserListDTO(
+                        user.getId(),
+                        user.getName(),
+                        user.getUsername()
+                ));
+    }
 
     /**
      * 관리자용 회원 상세 정보 조회
@@ -786,5 +804,4 @@ public class AdminController {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         return reportService.searchCommentReports(keyword, pageable);
     }
-
 }

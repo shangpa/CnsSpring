@@ -5,6 +5,9 @@ import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
 import com.example.springjwt.User.UserService;
 import com.example.springjwt.admin.dto.*;
+import com.example.springjwt.admin.log.AdminLog;
+import com.example.springjwt.admin.log.AdminLogRepository;
+import com.example.springjwt.admin.log.AdminLogService;
 import com.example.springjwt.board.BoardDetailResponseDTO;
 import com.example.springjwt.board.BoardRepository;
 import com.example.springjwt.board.BoardService;
@@ -55,6 +58,7 @@ public class AdminController {
     private final PointService pointService;
     private final AdminService adminService;
     private final TpReviewRepository tpReviewRepository;
+    private final AdminLogRepository adminLogRepository;
 
     // 관리자 회원가입
     @PostMapping("/join")
@@ -493,5 +497,53 @@ public class AdminController {
     @GetMapping("/users/{userId}/reviews/received")
     public List<TpReviewSimpleDTO> getReceivedTradeReviews(@PathVariable int userId) {
         return tpReviewRepository.findReviewsReceivedByUser(userId);
+    }
+
+    /**
+     * [GET] /api/admin/users/blocked
+     * 차단된 회원 리스트 조회 (페이징)
+     * - 응답: 회원 id, 이름(name), 아이디(username), 차단일(blockedAt)
+     */
+    @GetMapping("/users/blocked")
+    public Page<UserBlockedListDTO> getBlockedUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return userRepository.findByBlockedTrue(
+                PageRequest.of(page, size, Sort.by("blockedAt").descending())
+        ).map(user -> new UserBlockedListDTO(
+                user.getId(),
+                user.getName(),
+                user.getUsername(),
+                user.getBlockedAt()
+        ));
+    }
+
+    /**
+     * [GET] /api/admin/users/{userId}/block-reason
+     * 차단된 회원의 최신 차단 사유/관리자/일시 조회
+     * - PathVariable: userId
+     * - 응답: 사유(reason), 차단관리자(blockedBy), 차단일(blockedAt)
+     */
+    @GetMapping("/users/{userId}/block-reason")
+    public ResponseEntity<UserBlockReasonDTO> getBlockReason(@PathVariable int userId) {
+        // 1. 유저 차단 여부 체크 (옵션)
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("해당 유저를 찾을 수 없습니다."));
+        if (!user.isBlocked()) {
+            return ResponseEntity.badRequest().body(null);
+        }
+        // 2. 최신 차단 로그 조회
+        List<AdminLog> logs = adminLogRepository.findRecentUserBlocks(userId);
+        if (logs.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        AdminLog lastBlock = logs.get(0);
+        UserBlockReasonDTO dto = new UserBlockReasonDTO(
+                lastBlock.getReason(),
+                lastBlock.getAdminUsername(),
+                lastBlock.getCreatedAt()
+        );
+        return ResponseEntity.ok(dto);
     }
 }

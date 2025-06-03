@@ -15,4 +15,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Integer> {
     Optional<UserEntity> findOptionalByUsername(String username);
 
     Page<UserListDTO> findAllBy(Pageable pageable);
+
+    // 차단된 유저만 페이징 조회
+    Page<UserEntity> findByBlockedTrue(Pageable pageable);
 }

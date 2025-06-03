@@ -63,16 +63,9 @@ public class JWTFilter extends OncePerRequestFilter {
 
         String username = jwtUtil.getUsername(token);
         String role = jwtUtil.getRole(token);
-
-        /*UserEntity userEntity = new UserEntity();
-        userEntity.setUsername(username);
-        userEntity.setPassword("temppassword");
-        userEntity.setRole(role);*/
-
-        /*UserEntity userEntity = userRepository.findByUsername(username);
-        if (userEntity == null) {
-            throw new IllegalArgumentException("JWT에 해당하는 유저가 없습니다");
-        }*/
+        System.out.println("✅ JWT 추출 결과:");
+        System.out.println("   - username: " + username);
+        System.out.println("   - role: " + role);
 
         UserEntity userEntity = userRepository.findByUsername(username);
         if (userEntity == null) {

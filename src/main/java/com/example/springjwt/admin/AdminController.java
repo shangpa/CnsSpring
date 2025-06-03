@@ -9,6 +9,9 @@ import com.example.springjwt.board.BoardDetailResponseDTO;
 import com.example.springjwt.board.BoardRepository;
 import com.example.springjwt.board.BoardService;
 import com.example.springjwt.dto.JoinDTO;
+import com.example.springjwt.admin.dto.PointHistoryDTO;
+import com.example.springjwt.point.PointHistoryRepository;
+import com.example.springjwt.point.PointService;
 import com.example.springjwt.recipe.RecipeRepository;
 import com.example.springjwt.recipe.RecipeSearchResponseDTO;
 import com.example.springjwt.recipe.RecipeService;
@@ -46,6 +49,8 @@ public class AdminController {
     private final RecipeRepository recipeRepository;
     private final TradePostRepository tradePostRepository;
     private final ReviewRepository reviewRepository;
+    private final PointService pointService;
+
     // 관리자 회원가입
     @PostMapping("/join")
     public ResponseEntity<String> adminJoin(@RequestBody JoinDTO joinDTO) {
@@ -218,13 +223,34 @@ public class AdminController {
     }
 
     /**
-     * 특정 회원이 작성한 레시피 리스트 조회
+     * 특정 회원이 작성한 레시피 리스트 조회 (페이징)
      * - 응답: username, 레시피 제목, 작성일
-     * - GET /api/admin/users/{userId}/recipes
+     * - GET /api/admin/users/{userId}/recipes?page=0&size=10
      */
     @GetMapping("/users/{userId}/recipes")
-    public List<UserRecipeSimpleDTO> getUserRecipes(@PathVariable int userId) {
-        return recipeRepository.findRecipesByUserId(userId);
+    public Page<UserRecipeSimpleDTO> getUserRecipes(
+            @PathVariable int userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return recipeRepository.findRecipesByUserId(userId, pageable);
+    }
+
+    /**
+     * 특정 회원이 작성한 레시피 중 제목으로 검색 (페이징)
+     * - GET /api/admin/users/{userId}/recipes/search?keyword=된장&page=0&size=10
+     * - 응답: username, 레시피 제목, 작성일
+     */
+    @GetMapping("/users/{userId}/recipes/search")
+    public Page<UserRecipeSimpleDTO> searchUserRecipesByTitle(
+            @PathVariable int userId,
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return recipeRepository.findRecipesByUserIdAndTitleContains(userId, keyword, pageable);
     }
 
     /**
@@ -259,14 +285,14 @@ public class AdminController {
      *
      * 거래글을 삭제하면서 삭제한 관리자 ID와 사유를 함께 전달받아 로그로 기록합니다.
      *
-     * 🔹 요청 방식: DELETE
-     * 🔹 요청 URL: /api/admin/tradeposts/{postId}
-     * 🔹 요청 바디:
+     * 요청 방식: DELETE
+     * 요청 URL: /api/admin/tradeposts/{postId}
+     * 요청 바디:
      * {
      *   "adminUsername": "admin01",
      *   "reason": "허위 게시글로 판단되어 삭제"
      * }
-     * 🔹 응답: "삭제 및 로그 기록 완료"
+     * 응답: "삭제 및 로그 기록 완료"
      */
     @DeleteMapping("/tradeposts/{postId}")
     public ResponseEntity<String> deleteTradePostAsAdmin(
@@ -332,7 +358,7 @@ public class AdminController {
     }
 
     /**
-     * 🔹 관리자용 레시피 리스트 조회 API
+     * 관리자용 레시피 리스트 조회 API
      * - 페이지 번호(page)와 페이지 크기(size)를 기준으로 레시피 리스트를 페이징 처리하여 반환
      * - 반환 필드: recipeId, username(작성자 아이디), title, createdAt(작성일시)
      *
@@ -349,7 +375,7 @@ public class AdminController {
     }
 
     /**
-     * 🔍 관리자용 레시피 제목 검색 API
+     * 관리자용 레시피 제목 검색 API
      * - 제목에 특정 키워드가 포함된 레시피를 검색
      *
      * @param title 검색할 제목 키워드 (필수)
@@ -364,5 +390,45 @@ public class AdminController {
             @RequestParam(defaultValue = "10") int size
     ) {
         return ResponseEntity.ok(adminRecipeService.searchRecipesByTitle(title, page, size));
+    }
+    /**
+     * 특정 회원이 작성한 판매 거래글 리스트 조회
+     * - 요청 경로: /api/admin/users/{userId}/sales
+     * - 응답: 거래글 ID, 제목, 작성일, 거래 상태 (0=거래중, 1=거래완료)
+     */
+    @GetMapping("/users/{userId}/sales")
+    public List<UserTradePostSimpleDTO> getUserSales(@PathVariable int userId) {
+        return tradePostRepository.findSalesByUserId(userId);
+    }
+    /**
+     * 특정 회원이 구매한 거래글 리스트 조회
+     * - 요청 경로: /api/admin/users/{userId}/purchases
+     * - 응답: 거래글 ID, 제목, 작성일, 거래 상태 (0=거래중, 1=거래완료)
+     */
+    @GetMapping("/users/{userId}/purchases")
+    public List<UserTradePostSimpleDTO> getUserPurchases(@PathVariable int userId) {
+        return tradePostRepository.findPurchasesByUserId(userId);
+    }
+
+    /**
+     * ✅ 특정 회원의 포인트 적립 내역 조회
+     * GET /api/admin/users/{userId}/points/earned
+     */
+    @GetMapping("/users/{userId}/points/earned")
+    public List<PointHistoryDTO> getEarnedPoints(@PathVariable int userId) {
+        return pointService.getEarnedHistory(userId).stream()
+                .map(PointHistoryDTO::from)
+                .toList();
+    }
+
+    /**
+     * ✅ 특정 회원의 포인트 사용 내역 조회
+     * GET /api/admin/users/{userId}/points/used
+     */
+    @GetMapping("/users/{userId}/points/used")
+    public List<PointHistoryDTO> getUsedPoints(@PathVariable int userId) {
+        return pointService.getUsedHistory(userId).stream()
+                .map(PointHistoryDTO::from)
+                .toList();
     }
 }

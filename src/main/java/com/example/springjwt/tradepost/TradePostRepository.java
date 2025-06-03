@@ -1,6 +1,7 @@
 package com.example.springjwt.tradepost;
 
 import com.example.springjwt.User.UserEntity;
+import com.example.springjwt.admin.dto.UserTradePostSimpleDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -100,4 +101,29 @@ public interface TradePostRepository extends JpaRepository<TradePost, Long> {
 
     Page<TradePost> findByStatus(int status, Pageable pageable);
 
+    @Query("SELECT new com.example.springjwt.admin.dto.UserTradePostSimpleDTO(" +
+            "t.tradePostId, t.title, " +
+            "CASE WHEN LENGTH(t.description) > 15 THEN CONCAT(SUBSTRING(t.description, 1, 15), '...') ELSE t.description END, " +
+            "t.createdAt, t.status) " +
+            "FROM TradePost t WHERE t.user.id = :userId ORDER BY t.createdAt DESC")
+    List<UserTradePostSimpleDTO> findSalesByUserId(@Param("userId") int userId);
+
+
+    @Query("SELECT new com.example.springjwt.admin.dto.UserTradePostSimpleDTO(" +
+            "t.tradePostId, t.title, " +
+            "CASE WHEN LENGTH(t.description) > 15 THEN CONCAT(SUBSTRING(t.description, 1, 15), '...') ELSE t.description END, " +
+            "t.createdAt, t.status) " +
+            "FROM TradePost t WHERE t.buyer.id = :userId ORDER BY t.createdAt DESC")
+    List<UserTradePostSimpleDTO> findPurchasesByUserId(@Param("userId") int userId);
+
+    @Query("""
+    SELECT t FROM TradePost t
+    WHERE (:status IS NULL OR t.status = :status)
+    AND (:keyword IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%')))
+""")
+    Page<TradePost> findByStatusAndTitleKeyword(
+            @Param("status") Integer status,
+            @Param("keyword") String keyword,
+            Pageable pageable
+    );
 }

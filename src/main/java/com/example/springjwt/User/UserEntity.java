@@ -43,4 +43,9 @@ public class UserEntity {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
+
+    @Column(nullable = false)
+    private boolean blocked = false;
+
+    private LocalDateTime blockedAt;
 }

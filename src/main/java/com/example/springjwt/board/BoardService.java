@@ -2,10 +2,7 @@ package com.example.springjwt.board;
 
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
-import com.example.springjwt.admin.dto.BoardAdminListResponseDTO;
-import com.example.springjwt.admin.dto.BoardCommentResponseDTO;
-import com.example.springjwt.admin.dto.BoardDetailAdminDTO;
-import com.example.springjwt.admin.dto.BoardMonthlyStatsDTO;
+import com.example.springjwt.admin.dto.*;
 import com.example.springjwt.admin.log.AdminLogService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -265,5 +262,19 @@ public class BoardService {
                 reason
         );
     }
+    public Page<CommentAdminResponseDTO> getCommentsForAdmin(Pageable pageable) {
+        return boardCommentRepository.findAll(pageable)
+                .map(CommentAdminResponseDTO::from);
+    }
 
+    public Page<CommentAdminResponseDTO> searchCommentsByContent(String keyword, Pageable pageable) {
+        return boardCommentRepository.findByContentContaining(keyword, pageable)
+                .map(CommentAdminResponseDTO::from);
+    }
+    // BoardService.java
+    public Long getBoardIdByCommentId(Long commentId) {
+        BoardComment comment = boardCommentRepository.findById(commentId)
+                .orElseThrow(() -> new RuntimeException("댓글을 찾을 수 없습니다."));
+        return comment.getBoard().getId(); // Board 엔티티에서 id 꺼냄
+    }
 }

@@ -5,16 +5,28 @@ import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
 import com.example.springjwt.User.UserService;
 import com.example.springjwt.admin.dto.*;
+import com.example.springjwt.admin.enums.StatType;
+import com.example.springjwt.admin.log.AdminLog;
+import com.example.springjwt.admin.log.AdminLogRepository;
+import com.example.springjwt.admin.log.AdminLogService;
 import com.example.springjwt.board.BoardDetailResponseDTO;
 import com.example.springjwt.board.BoardRepository;
 import com.example.springjwt.board.BoardService;
+import com.example.springjwt.dto.CustomUserDetails;
 import com.example.springjwt.dto.JoinDTO;
+import com.example.springjwt.admin.dto.PointHistoryDTO;
+import com.example.springjwt.mypage.LikeRecipe;
+import com.example.springjwt.mypage.LikeRecipeRepository;
+import com.example.springjwt.mypage.RecommendRecipeRepository;
+import com.example.springjwt.point.PointHistoryRepository;
+import com.example.springjwt.point.PointService;
 import com.example.springjwt.recipe.RecipeRepository;
 import com.example.springjwt.recipe.RecipeSearchResponseDTO;
 import com.example.springjwt.recipe.RecipeService;
 import com.example.springjwt.report.ReportRepository;
 import com.example.springjwt.report.ReportService;
 import com.example.springjwt.review.Recipe.ReviewRepository;
+import com.example.springjwt.review.TradePost.TpReviewRepository;
 import com.example.springjwt.tradepost.TradePostRepository;
 import com.example.springjwt.tradepost.TradePostService;
 import com.example.springjwt.tradepost.TradePostSimpleResponseDTO;
@@ -23,13 +35,17 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/admin")
@@ -46,6 +62,13 @@ public class AdminController {
     private final RecipeRepository recipeRepository;
     private final TradePostRepository tradePostRepository;
     private final ReviewRepository reviewRepository;
+    private final PointService pointService;
+    private final AdminService adminService;
+    private final TpReviewRepository tpReviewRepository;
+    private final AdminLogRepository adminLogRepository;
+    private final LikeRecipeRepository likeRecipeRepository;
+    private final RecommendRecipeRepository recommendRecipeRepository;
+
     // 관리자 회원가입
     @PostMapping("/join")
     public ResponseEntity<String> adminJoin(@RequestBody JoinDTO joinDTO) {
@@ -177,7 +200,7 @@ public class AdminController {
     /**
      * 관리자용 회원 리스트 조회 (페이징)
      * - 응답: 회원 id, 이름(name), 아이디(username)
-     * - GET /api/admin/users?page=0&size=10
+     * - GET /admin/users?page=0&size=10
      */
     @GetMapping("/users")
     public Page<UserListDTO> getUserList(@RequestParam(defaultValue = "0") int page,
@@ -194,7 +217,7 @@ public class AdminController {
     /**
      * 관리자용 회원 상세 정보 조회
      * - 응답: 이름, 아이디, 가입일, 포인트, 작성한 레시피 수, 거래글 수, 리뷰 수
-     * - GET /api/admin/users/{userId}
+     * - GET /admin/users/{userId}
      */
     @GetMapping("/users/{userId}")
     public UserDetailDTO getUserDetail(@PathVariable int userId){
@@ -218,17 +241,38 @@ public class AdminController {
     }
 
     /**
-     * 특정 회원이 작성한 레시피 리스트 조회
+     * 특정 회원이 작성한 레시피 리스트 조회 (페이징)
      * - 응답: username, 레시피 제목, 작성일
-     * - GET /api/admin/users/{userId}/recipes
+     * - GET /admin/users/{userId}/recipes?page=0&size=10
      */
     @GetMapping("/users/{userId}/recipes")
-    public List<UserRecipeSimpleDTO> getUserRecipes(@PathVariable int userId) {
-        return recipeRepository.findRecipesByUserId(userId);
+    public Page<UserRecipeSimpleDTO> getUserRecipes(
+            @PathVariable int userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return recipeRepository.findRecipesByUserId(userId, pageable);
     }
 
     /**
-     * [GET] /api/admin/tradeposts?page=0&size=10&status=0&sortBy=createdAt
+     * 특정 회원이 작성한 레시피 중 제목으로 검색 (페이징)
+     * - GET /admin/users/{userId}/recipes/search?keyword=된장&page=0&size=10
+     * - 응답: username, 레시피 제목, 작성일
+     */
+    @GetMapping("/users/{userId}/recipes/search")
+    public Page<UserRecipeSimpleDTO> searchUserRecipesByTitle(
+            @PathVariable int userId,
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return recipeRepository.findRecipesByUserIdAndTitleContains(userId, keyword, pageable);
+    }
+
+    /**
+     * [GET] /admin/tradeposts?page=0&size=10&status=0&sortBy=createdAt
      * 전체 거래글 조회 (status: 0=거래중, 1=거래완료, 생략 시 전체)
      * 정렬 기준: createdAt, category 등 (기본값: createdAt 내림차순)
      * 응답: id, username, title, createdAt, category, status 포함
@@ -238,14 +282,15 @@ public class AdminController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) Integer status,
-            @RequestParam(required = false) String sortBy
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String keyword // 🔍 추가
     ) {
-        return tradePostService.getTradePosts(page, size, status, sortBy);
+        return tradePostService.getTradePosts(page, size, status, sortBy, keyword);
     }
 
 
     /**
-     * [GET] /api/admin/tradeposts/{postId}
+     * [GET] /admin/tradeposts/{postId}
      * 거래글 상세 조회
      * 응답: id, username, title, description, createdAt, imageUrls, location, chatCount, viewCount 포함
      */
@@ -254,19 +299,19 @@ public class AdminController {
         return ResponseEntity.ok(tradePostService.getTradePostDetail(postId));
     }
 
-    /** todo 수정해야함
+    /**
      * [관리자용 거래글 삭제 API]
      *
      * 거래글을 삭제하면서 삭제한 관리자 ID와 사유를 함께 전달받아 로그로 기록합니다.
      *
-     * 🔹 요청 방식: DELETE
-     * 🔹 요청 URL: /api/admin/tradeposts/{postId}
-     * 🔹 요청 바디:
+     * 요청 방식: DELETE
+     * 요청 URL: /admin/tradeposts/{postId}
+     * 요청 바디:
      * {
      *   "adminUsername": "admin01",
      *   "reason": "허위 게시글로 판단되어 삭제"
      * }
-     * 🔹 응답: "삭제 및 로그 기록 완료"
+     * 응답: "삭제 및 로그 기록 완료"
      */
     @DeleteMapping("/tradeposts/{postId}")
     public ResponseEntity<String> deleteTradePostAsAdmin(
@@ -277,13 +322,13 @@ public class AdminController {
         return ResponseEntity.ok("삭제 및 로그 기록 완료");
     }
 
-    // [GET] /api/admin/boards
+    // [GET] /admin/boards
     // 관리자용 커뮤니티 게시글 조회 (페이징+정렬)
     // - page: 페이지 번호 (기본 0)
     // - size: 페이지 크기 (기본 10)
     // - sortBy: 정렬 기준 (기본 createdAt)
     // 응답: id, 작성자, 내용, 게시날짜 포함
-    @GetMapping("/tradeposts")
+    @GetMapping("boards")
     public Page<BoardAdminListResponseDTO> getBoards(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -294,7 +339,7 @@ public class AdminController {
     }
 
 
-    /* [GET] /api/admin/boards/{boardId}
+    /* [GET] /admin/boards/{boardId}
      관리자용 게시글 상세 조회 API
      - boardId: 게시글 ID (PathVariable)
      - 댓글 리스트 포함
@@ -306,7 +351,7 @@ public class AdminController {
     }
 
     /**
-     * [DELETE] /api/admin/boards/{boardId}
+     * [DELETE] /admin/boards/{boardId}
      * 관리자 커뮤니티 게시글 삭제
      * - 요청: 관리자 아이디(adminUsername), 삭제 사유(reason)
      * - 응답: "삭제 및 로그 기록 완료"
@@ -320,7 +365,7 @@ public class AdminController {
         return ResponseEntity.ok("삭제 및 로그 기록 완료");
     }
 
-    // [DELETE] /api/admin/comments/{commentId}
+    // [DELETE] /admin/comments/{commentId}
     // 관리자 댓글 삭제 (사유 기록 및 댓글수 감소 포함)
     @DeleteMapping("/comments/{commentId}")
     public ResponseEntity<String> deleteCommentAsAdmin(
@@ -332,8 +377,51 @@ public class AdminController {
     }
 
     /**
-     * 🔹 관리자용 레시피 리스트 조회 API
-     * - 페이지 번호(page)와 페이지 크기(size)를 기준으로 레시피 리스트를 페이징 처리하여 반환
+     * [GET] /admin/comments
+     * 관리자 댓글 리스트 조회 (페이징)
+     * - page, size, sortBy 제공 가능
+     */
+    @GetMapping("/comments")
+    public Page<CommentAdminResponseDTO> getComments(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortBy));
+        return boardService.getCommentsForAdmin(pageable);
+    }
+
+    /**
+     * [GET] /admin/comments/{commentId}/board
+     * 특정 댓글이 달린 게시글 상세 조회
+     * - commentId를 통해 연결된 게시글(boardId)을 찾아서 상세정보 반환
+     * - 응답: BoardDetailAdminDTO (댓글 포함된 게시글 상세)
+     */
+    @GetMapping("/comments/{commentId}/board")
+    public ResponseEntity<BoardDetailAdminDTO> getBoardByComment(@PathVariable Long commentId) {
+        Long boardId = boardService.getBoardIdByCommentId(commentId);
+        return ResponseEntity.ok(boardService.getBoardDetail(boardId));
+    }
+
+
+    /**
+     * [GET] /admin/comments/search
+     * @param page 조회할 페이지 번호 (기본값: 0)
+     * @param size 한 페이지당 레시피 개수 (기본값: 10)
+     */
+    @GetMapping("/comments/search")
+    public Page<CommentAdminResponseDTO> searchComments(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return boardService.searchCommentsByContent(keyword, pageable);
+    }
+
+
+    /**
+     * 관리자용 레시피 리스트 조회 API
      * - 반환 필드: recipeId, username(작성자 아이디), title, createdAt(작성일시)
      *
      * @param page 조회할 페이지 번호 (기본값: 0)
@@ -349,7 +437,7 @@ public class AdminController {
     }
 
     /**
-     * 🔍 관리자용 레시피 제목 검색 API
+     * 관리자용 레시피 제목 검색 API
      * - 제목에 특정 키워드가 포함된 레시피를 검색
      *
      * @param title 검색할 제목 키워드 (필수)
@@ -365,4 +453,338 @@ public class AdminController {
     ) {
         return ResponseEntity.ok(adminRecipeService.searchRecipesByTitle(title, page, size));
     }
+    /**
+     * 특정 회원이 작성한 판매 거래글 리스트 조회
+     * - 요청 경로: /admin/users/{userId}/sales
+     * - 응답: 거래글 ID, 제목, 작성일, 거래 상태 (0=거래중, 1=거래완료)
+     */
+    @GetMapping("/users/{userId}/sales")
+    public List<UserTradePostSimpleDTO> getUserSales(@PathVariable int userId) {
+        return tradePostRepository.findSalesByUserId(userId);
+    }
+    /**
+     * 특정 회원이 구매한 거래글 리스트 조회
+     * - 요청 경로: /admin/users/{userId}/purchases
+     * - 응답: 거래글 ID, 제목, 작성일, 거래 상태 (0=거래중, 1=거래완료)
+     */
+    @GetMapping("/users/{userId}/purchases")
+    public List<UserTradePostSimpleDTO> getUserPurchases(@PathVariable int userId) {
+        return tradePostRepository.findPurchasesByUserId(userId);
+    }
+
+    /**
+     * ✅ 특정 회원의 포인트 적립 내역 조회
+     * GET /admin/users/{userId}/points/earned
+     */
+    @GetMapping("/users/{userId}/points/earned")
+    public List<PointHistoryDTO> getEarnedPoints(@PathVariable int userId) {
+        return pointService.getEarnedHistory(userId).stream()
+                .map(PointHistoryDTO::from)
+                .toList();
+    }
+
+    /**
+     * ✅ 특정 회원의 포인트 사용 내역 조회
+     * GET /admin/users/{userId}/points/used
+     */
+    @GetMapping("/users/{userId}/points/used")
+    public List<PointHistoryDTO> getUsedPoints(@PathVariable int userId) {
+        return pointService.getUsedHistory(userId).stream()
+                .map(PointHistoryDTO::from)
+                .toList();
+    }
+    /**
+     * [POST] /admin/users/{userId}/block
+     * 관리자 회원 차단 API
+     * - PathVariable: userId (차단할 회원 id)
+     * - RequestBody: {"reason": "스팸 계정으로 확인되어 차단"}
+     */
+    @PostMapping("/users/{userId}/block")
+    public ResponseEntity<?> blockUser(
+            @PathVariable int userId,
+            @RequestBody BlockRequestDTO dto,
+            @AuthenticationPrincipal CustomUserDetails admin // 관리자의 username
+    ) {
+        adminService.blockUser(userId, admin.getUsername(), dto.getReason());
+        return ResponseEntity.ok("차단 완료");
+    }
+    /**
+     * [POST] /admin/users/{userId}/block
+     * 관리자 회원 차단 해제 API
+     * - PathVariable: userId (차단할 회원 id)
+     * - RequestBody: {"reason": "생일기념 차단 해제"}
+     */
+    @PostMapping("/users/{userId}/unblock")
+    public ResponseEntity<?> unblockUser(
+            @PathVariable int userId,
+            @RequestBody BlockRequestDTO dto,
+            @AuthenticationPrincipal CustomUserDetails admin
+    ) {
+        adminService.unblockUser(userId, admin.getUsername(), dto.getReason());
+        return ResponseEntity.ok("차단 해제 완료");
+    }
+    /**
+     * 🔍 관리자 레시피 상세 조회 (리뷰 포함)
+     * @param recipeId 레시피 ID
+     * @return RecipeDetailAdminDTO
+     * reviews는 List로 넘어감
+     */
+    @GetMapping("/recipes/{recipeId}")
+    public ResponseEntity<RecipeDetailAdminDTO> getRecipeDetail(@PathVariable Long recipeId) {
+        return ResponseEntity.ok(adminRecipeService.getRecipeDetail(recipeId));
+    }
+
+    /**
+     * 특정 회원이 작성한 거래 후기 조회
+     * - GET /admin/users/{userId}/reviews/written
+     */
+    @GetMapping("/users/{userId}/reviews/written")
+    public List<TpReviewSimpleDTO> getWrittenTradeReviews(@PathVariable int userId) {
+        return tpReviewRepository.findReviewsWrittenByUser(userId);
+    }
+
+    /**
+     * 특정 회원이 받은 거래 후기 조회 (내 거래글에 남겨진)
+     * - GET /admin/users/{userId}/reviews/received
+     */
+    @GetMapping("/users/{userId}/reviews/received")
+    public List<TpReviewSimpleDTO> getReceivedTradeReviews(@PathVariable int userId) {
+        return tpReviewRepository.findReviewsReceivedByUser(userId);
+    }
+
+    /**
+     * [GET] /admin/users/blocked
+     * 차단된 회원 리스트 조회 (페이징)
+     * - 응답: 회원 id, 이름(name), 아이디(username), 차단일(blockedAt)
+     */
+    @GetMapping("/users/blocked")
+    public Page<UserBlockedListDTO> getBlockedUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return userRepository.findByBlockedTrue(
+                PageRequest.of(page, size, Sort.by("blockedAt").descending())
+        ).map(user -> new UserBlockedListDTO(
+                user.getId(),
+                user.getName(),
+                user.getUsername(),
+                user.getBlockedAt()
+        ));
+    }
+
+    /**
+     * [GET] /admin/users/{userId}/block-reason
+     * 차단된 회원의 최신 차단 사유/관리자/일시 조회
+     * - PathVariable: userId
+     * - 응답: 사유(reason), 차단관리자(blockedBy), 차단일(blockedAt)
+     */
+    @GetMapping("/users/{userId}/block-reason")
+    public ResponseEntity<UserBlockReasonDTO> getBlockReason(@PathVariable int userId) {
+        // 1. 유저 차단 여부 체크 (옵션)
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("해당 유저를 찾을 수 없습니다."));
+        if (!user.isBlocked()) {
+            return ResponseEntity.badRequest().body(null);
+        }
+        // 2. 최신 차단 로그 조회
+        List<AdminLog> logs = adminLogRepository.findRecentUserBlocks(userId);
+        if (logs.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        AdminLog lastBlock = logs.get(0);
+        UserBlockReasonDTO dto = new UserBlockReasonDTO(
+                lastBlock.getReason(),
+                lastBlock.getAdminUsername(),
+                lastBlock.getCreatedAt()
+        );
+        return ResponseEntity.ok(dto);
+    }
+    /**
+     * 통계 파라미터 사용
+     *
+     * @param type  통계 유형 (필수) - DAILY / MONTHLY / YEARLY
+     * @param year  연도 (MONTHLY 또는 YEARLY일 때 필수)  예: 2024
+     * @param month 월 (MONTHLY일 때 필수)            예: 5
+     * @param start 시작일 (DAILY일 때 필수)           예: 2024-04-01
+     * @param end   종료일 (DAILY일 때 필수)           예: 2024-04-30
+     *
+     * 📌 호출 예시:
+     * - DAILY   : admin/stats/recipes?type=DAILY&start=2024-04-01&end=2024-04-30
+     * - MONTHLY : admin/stats/recipes?type=MONTHLY&year=2024&month=5
+     * - YEARLY  : admin/stats/recipes?type=YEARLY&year=2024
+     */
+
+    /**
+     * [GET] /admin/stats/recipes
+     * 레시피 작성 수 통계 API
+     * - 통계 유형(type): DAILY, MONTHLY, YEARLY
+     * - 필터: 시작일~종료일(start, end), 연도(year), 월(month)
+     * - 응답: 날짜/월별 작성된 레시피 수
+     */
+    @GetMapping("/stats/recipes")
+    public ResponseEntity<List<RecipeStatDTO>> getRecipeStats(
+            @RequestParam("type") StatType type,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end
+    ) {
+        List<RecipeStatDTO> stats = recipeService.getRecipeStats(type, start, end, year, month);
+        return ResponseEntity.ok(stats);
+    }
+    /**
+     * [GET] /admin/stats/recipes/likes
+     * 레시피 찜 수 통계 API
+     * - 통계 유형(type): DAILY, MONTHLY, YEARLY
+     * - 필터: 시작일~종료일(start, end), 연도(year), 월(month)
+     * - 응답: 날짜/월별 찜 수
+     */
+    @GetMapping("/stats/recipes/likes")
+    public ResponseEntity<List<RecipeStatDTO>> getLikeStats(
+            @RequestParam("type") StatType type,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end
+    ) {
+        List<RecipeStatDTO> result;
+
+        if (type == StatType.YEARLY && year != null) {
+            result = likeRecipeRepository.countLikesByYear(year).stream()
+                    .map(obj -> new RecipeStatDTO(obj[0] + "월", (Long) obj[1]))
+                    .collect(Collectors.toList());
+
+        } else if (type == StatType.MONTHLY && year != null && month != null) {
+            result = likeRecipeRepository.countLikesByMonth(year, month).stream()
+                    .map(obj -> new RecipeStatDTO(obj[0] + "일", (Long) obj[1]))
+                    .collect(Collectors.toList());
+
+        } else if (type == StatType.DAILY && start != null && end != null) {
+            result = likeRecipeRepository.countLikesByDateRange(
+                            start.atStartOfDay(), end.atTime(23, 59, 59))
+                    .stream()
+                    .map(obj -> new RecipeStatDTO(obj[0].toString(), (Long) obj[1]))
+                    .collect(Collectors.toList());
+
+        } else {
+            throw new IllegalArgumentException("요청 파라미터가 부족하거나 잘못되었습니다.");
+        }
+
+        return ResponseEntity.ok(result);
+    }
+    /**
+     * [GET] /admin/stats/recipes/recommends
+     * 레시피 추천 수 통계 API
+     * - 통계 유형(type): DAILY, MONTHLY, YEARLY
+     * - 필터: 시작일~종료일(start, end), 연도(year), 월(month)
+     * - 응답: 날짜/월별 추천 수
+     */
+    @GetMapping("/stats/recipes/recommends")
+    public ResponseEntity<List<RecipeStatDTO>> getRecommendStats(
+            @RequestParam("type") StatType type,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end
+    ) {
+        List<RecipeStatDTO> result;
+
+        if (type == StatType.YEARLY && year != null) {
+            result = recommendRecipeRepository.countByYear(year).stream()
+                    .map(obj -> new RecipeStatDTO(obj[0] + "월", (Long) obj[1]))
+                    .collect(Collectors.toList());
+
+        } else if (type == StatType.MONTHLY && year != null && month != null) {
+            result = recommendRecipeRepository.countByMonth(year, month).stream()
+                    .map(obj -> new RecipeStatDTO(obj[0] + "일", (Long) obj[1]))
+                    .collect(Collectors.toList());
+
+        } else if (type == StatType.DAILY && start != null && end != null) {
+            result = recommendRecipeRepository.countByDateRange(
+                            start.atStartOfDay(), end.atTime(23, 59, 59))
+                    .stream()
+                    .map(obj -> new RecipeStatDTO(obj[0].toString(), (Long) obj[1]))
+                    .collect(Collectors.toList());
+
+        } else {
+            throw new IllegalArgumentException("요청 파라미터가 부족하거나 잘못되었습니다.");
+        }
+
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * [GET] /admin/stats/recipes/categories
+     * 레시피 카테고리별 통계 조회 API
+     * - 응답: 한식, 중식, 양식 등 카테고리별 레시피 수
+     */
+    @GetMapping("/stats/recipes/categories")
+    public ResponseEntity<List<RecipeStatDTO>> getCategoryStats() {
+        return ResponseEntity.ok(recipeService.getCategoryStats());
+    }
+
+    /**
+     * [GET] /api/admin/reports/boards
+     * 게시글 신고 리스트 조회 API (페이징)
+     * @return 최신순 정렬된 게시글 신고 리스트
+     */
+    @GetMapping("/reports/boards")
+    public Page<ReportResponseDTO> getBoardReports(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return reportService.getBoardReports(pageable);
+    }
+
+    /**
+     * [GET] /api/admin/reports/comments
+     * 댓글 신고 리스트 조회 API (페이징)
+     * @return 최신순 정렬된 댓글 신고 리스트
+     */
+    @GetMapping("/reports/comments")
+    public Page<ReportResponseDTO> getCommentReports(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return reportService.getCommentReports(pageable);
+    }
+
+    /**
+     * [GET] /api/admin/reports/boards/search
+     * 게시글 신고 검색 API
+     *
+     * @param keyword 검색 키워드 (필수)
+     * @return 키워드가 포함된 게시글 신고 리스트 (최신순)
+     * 예시: /api/admin/reports/boards/search?keyword=욕설&page=0&size=10
+     */
+    @GetMapping("/reports/boards/search")
+    public Page<ReportResponseDTO> searchBoardReports(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return reportService.searchBoardReports(keyword, pageable);
+    }
+
+    /**
+     * [GET] /api/admin/reports/comments/search
+     * 댓글 신고 검색 API
+     *
+     * @param keyword 검색 키워드 (필수)
+     * @return 키워드가 포함된 댓글 신고 리스트 (최신순)
+     * 예시: /api/admin/reports/comments/search?keyword=비속어&page=0&size=10
+     */
+    @GetMapping("/reports/comments/search")
+    public Page<ReportResponseDTO> searchCommentReports(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return reportService.searchCommentReports(keyword, pageable);
+    }
+
 }

@@ -64,4 +64,17 @@ public class PointService {
                 .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
         return pointHistoryRepository.findByUserOrderByCreatedAtDesc(user);
     }
+
+    public List<PointHistory> getEarnedHistory(int userId) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+        return pointHistoryRepository.findByUserAndActionNotOrderByCreatedAtDesc(user, PointActionType.USE_POINT);
+    }
+
+    public List<PointHistory> getUsedHistory(int userId) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+        return pointHistoryRepository.findByUserAndActionOrderByCreatedAtDesc(user, PointActionType.USE_POINT);
+    }
+
 }

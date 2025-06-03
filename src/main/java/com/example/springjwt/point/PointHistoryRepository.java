@@ -8,4 +8,7 @@ import java.util.List;
 public interface PointHistoryRepository extends JpaRepository<PointHistory, Long> {
     List<PointHistory> findByUser(UserEntity user);
     List<PointHistory> findByUserOrderByCreatedAtDesc(UserEntity user);
+    List<PointHistory> findByUserAndActionNotOrderByCreatedAtDesc(UserEntity user, PointActionType excluded);
+    List<PointHistory> findByUserAndActionOrderByCreatedAtDesc(UserEntity user, PointActionType action);
+
 }

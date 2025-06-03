@@ -68,6 +68,15 @@ public class JWTFilter extends OncePerRequestFilter {
         System.out.println("   - role: " + role);
 
         UserEntity userEntity = userRepository.findByUsername(username);
+        // ✅ 차단된 회원이면 즉시 요청 거부
+        if (userEntity != null && userEntity.isBlocked()) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType("application/json; charset=UTF-8");
+            response.getWriter().write("{\"error\": \"차단된 회원입니다.\"}");
+            System.out.println("차단된 유저입니다 username:" + username);
+            return;
+        }
+
         if (userEntity == null) {
             System.out.println("JWT에 해당하는 유저가 없습니다");
             filterChain.doFilter(request, response);

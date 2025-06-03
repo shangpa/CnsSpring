@@ -2,6 +2,7 @@ package com.example.springjwt.admin;
 
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
+import com.example.springjwt.admin.log.AdminLogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +24,7 @@ public class AdminService {
         userRepository.save(user);
 
         adminLogService.logAdminAction(
-                adminUsername, "BLOCK_USER", "USER", userId, reason
+                adminUsername, "BLOCK_USER", "USER", (long) userId, reason
         );
     }
 
@@ -36,7 +37,7 @@ public class AdminService {
         userRepository.save(user);
 
         adminLogService.logAdminAction(
-                adminUsername, "UNBLOCK_USER", "USER", userId, reason
+                adminUsername, "UNBLOCK_USER", "USER", (long) userId, reason
         );
     }
 }

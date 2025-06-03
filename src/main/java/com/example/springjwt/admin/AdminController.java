@@ -19,6 +19,7 @@ import com.example.springjwt.recipe.RecipeService;
 import com.example.springjwt.report.ReportRepository;
 import com.example.springjwt.report.ReportService;
 import com.example.springjwt.review.Recipe.ReviewRepository;
+import com.example.springjwt.review.TradePost.TpReviewRepository;
 import com.example.springjwt.tradepost.TradePostRepository;
 import com.example.springjwt.tradepost.TradePostService;
 import com.example.springjwt.tradepost.TradePostSimpleResponseDTO;
@@ -53,6 +54,7 @@ public class AdminController {
     private final ReviewRepository reviewRepository;
     private final PointService pointService;
     private final AdminService adminService;
+    private final TpReviewRepository tpReviewRepository;
 
     // 관리자 회원가입
     @PostMapping("/join")
@@ -434,6 +436,12 @@ public class AdminController {
                 .map(PointHistoryDTO::from)
                 .toList();
     }
+    /**
+     * [POST] /api/admin/users/{userId}/block
+     * 관리자 회원 차단 API
+     * - PathVariable: userId (차단할 회원 id)
+     * - RequestBody: {"reason": "스팸 계정으로 확인되어 차단"}
+     */
     @PostMapping("/users/{userId}/block")
     public ResponseEntity<?> blockUser(
             @PathVariable int userId,
@@ -442,5 +450,48 @@ public class AdminController {
     ) {
         adminService.blockUser(userId, admin.getUsername(), dto.getReason());
         return ResponseEntity.ok("차단 완료");
+    }
+    /**
+     * [POST] /api/admin/users/{userId}/block
+     * 관리자 회원 차단 해제 API
+     * - PathVariable: userId (차단할 회원 id)
+     * - RequestBody: {"reason": "생일기념 차단 해제"}
+     */
+    @PostMapping("/users/{userId}/unblock")
+    public ResponseEntity<?> unblockUser(
+            @PathVariable int userId,
+            @RequestBody BlockRequestDTO dto,
+            @AuthenticationPrincipal CustomUserDetails admin
+    ) {
+        adminService.unblockUser(userId, admin.getUsername(), dto.getReason());
+        return ResponseEntity.ok("차단 해제 완료");
+    }
+    /**
+     * 🔍 관리자 레시피 상세 조회 (리뷰 포함)
+     * @param recipeId 레시피 ID
+     * @return RecipeDetailAdminDTO
+     * reviews는 List로 넘어감
+     */
+    @GetMapping("/recipes/{recipeId}")
+    public ResponseEntity<RecipeDetailAdminDTO> getRecipeDetail(@PathVariable Long recipeId) {
+        return ResponseEntity.ok(adminRecipeService.getRecipeDetail(recipeId));
+    }
+
+    /**
+     * 특정 회원이 작성한 거래 후기 조회
+     * - GET /api/admin/users/{userId}/reviews/written
+     */
+    @GetMapping("/users/{userId}/reviews/written")
+    public List<TpReviewSimpleDTO> getWrittenTradeReviews(@PathVariable int userId) {
+        return tpReviewRepository.findReviewsWrittenByUser(userId);
+    }
+
+    /**
+     * 특정 회원이 받은 거래 후기 조회 (내 거래글에 남겨진)
+     * - GET /api/admin/users/{userId}/reviews/received
+     */
+    @GetMapping("/users/{userId}/reviews/received")
+    public List<TpReviewSimpleDTO> getReceivedTradeReviews(@PathVariable int userId) {
+        return tpReviewRepository.findReviewsReceivedByUser(userId);
     }
 }

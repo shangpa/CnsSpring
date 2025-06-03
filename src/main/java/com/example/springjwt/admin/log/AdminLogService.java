@@ -3,6 +3,8 @@ package com.example.springjwt.admin.log;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class AdminLogService {
@@ -28,18 +30,3 @@ public class AdminLogService {
         adminLogRepository.save(log);
     }
 }
-/**
- * 로그 기록 서비스
- *
- * 관리자 기능에서 어떤 작업이 수행되었는지 로그로 남기기 위한 서비스
- *
- * 사용 예시:
- * adminLogService.logAdminAction(
- *     "admin01",          // 관리자 ID
- *     "DELETE_POST",      // 행동 (예: DELETE_POST, BLOCK_USER 등)
- *     "TRADE_POST",       // 대상 타입 (예: TRADE_POST, RECIPE 등)
- *     123L,               // 대상 ID
- *     "허위 정보 포함으로 삭제함"  // 사유
- * );
- *
- */

@@ -377,8 +377,51 @@ public class AdminController {
     }
 
     /**
+     * [GET] /admin/comments
+     * 관리자 댓글 리스트 조회 (페이징)
+     * - page, size, sortBy 제공 가능
+     */
+    @GetMapping("/comments")
+    public Page<CommentAdminResponseDTO> getComments(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortBy));
+        return boardService.getCommentsForAdmin(pageable);
+    }
+
+    /**
+     * [GET] /admin/comments/{commentId}/board
+     * 특정 댓글이 달린 게시글 상세 조회
+     * - commentId를 통해 연결된 게시글(boardId)을 찾아서 상세정보 반환
+     * - 응답: BoardDetailAdminDTO (댓글 포함된 게시글 상세)
+     */
+    @GetMapping("/comments/{commentId}/board")
+    public ResponseEntity<BoardDetailAdminDTO> getBoardByComment(@PathVariable Long commentId) {
+        Long boardId = boardService.getBoardIdByCommentId(commentId);
+        return ResponseEntity.ok(boardService.getBoardDetail(boardId));
+    }
+
+
+    /**
+     * [GET] /admin/comments/search
+     * @param page 조회할 페이지 번호 (기본값: 0)
+     * @param size 한 페이지당 레시피 개수 (기본값: 10)
+     */
+    @GetMapping("/comments/search")
+    public Page<CommentAdminResponseDTO> searchComments(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return boardService.searchCommentsByContent(keyword, pageable);
+    }
+
+
+    /**
      * 관리자용 레시피 리스트 조회 API
-     * - 페이지 번호(page)와 페이지 크기(size)를 기준으로 레시피 리스트를 페이징 처리하여 반환
      * - 반환 필드: recipeId, username(작성자 아이디), title, createdAt(작성일시)
      *
      * @param page 조회할 페이지 번호 (기본값: 0)

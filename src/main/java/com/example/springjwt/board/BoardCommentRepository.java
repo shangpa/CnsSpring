@@ -1,5 +1,7 @@
 package com.example.springjwt.board;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -20,4 +22,6 @@ public interface BoardCommentRepository extends JpaRepository<BoardComment, Long
     List<Object[]> countCommentMonthly(@Param("startDate") LocalDateTime startDate);
 
     void deleteAllByBoard(Board board);
+
+    Page<BoardComment> findByContentContaining(String keyword, Pageable pageable);
 }

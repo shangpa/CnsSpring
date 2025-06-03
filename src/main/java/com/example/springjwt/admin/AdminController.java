@@ -205,13 +205,13 @@ public class AdminController {
     @GetMapping("/users")
     public Page<UserListDTO> getUserList(@RequestParam(defaultValue = "0") int page,
                                          @RequestParam(defaultValue = "10") int size) {
-        return userRepository.findAll(
-                PageRequest.of(page, size, Sort.by("id").descending())
-        ).map(user -> new UserListDTO(
-                user.getId(),
-                user.getName(),
-                user.getUsername()
-        ));
+        return userRepository.findByRoleNotAndBlockedFalse("ADMIN",
+                        PageRequest.of(page, size, Sort.by("id").descending()))
+                .map(user -> new UserListDTO(
+                        user.getId(),
+                        user.getName(),
+                        user.getUsername()
+                ));
     }
 
     /**

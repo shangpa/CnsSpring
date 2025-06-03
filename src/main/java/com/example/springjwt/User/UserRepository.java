@@ -18,4 +18,5 @@ public interface UserRepository extends JpaRepository<UserEntity, Integer> {
 
     // 차단된 유저만 페이징 조회
     Page<UserEntity> findByBlockedTrue(Pageable pageable);
+    Page<UserEntity> findByRoleNotAndBlockedFalse(String excludedRole, Pageable pageable);
 }

@@ -47,4 +47,5 @@ public class FridgeHistoryController {
         List<FridgeHistoryResponse> historyList = historyService.getAllHistoryByUser(userId);
         return ResponseEntity.ok(historyList);
     }
+
 }

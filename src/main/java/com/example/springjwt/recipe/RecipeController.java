@@ -131,4 +131,11 @@ public class RecipeController {
 
         return ResponseEntity.ok(result);
     }
+
+    // 제철 음식 추천 (제목 기준)
+    @GetMapping("/seasonal")
+    public List<RecipeDTO> getSeasonalRecipes() {
+        List<String> seasonalTitles = List.of("삼계탕", "초계국수", "콩국수", "물회", "오이냉국", "열무국수");
+        return recipeService.findRecipesByTitlesContaining(seasonalTitles);
     }
+}

@@ -167,6 +167,13 @@ public class FridgeService {
         fridge.setUpdatedAt(LocalDateTime.now());
 
         fridgeRepository.save(fridge);
+
+        historyService.saveHistory(
+                (long) user.getId(),
+                dto.getIngredientName(),
+                dto.getQuantity(),
+                FridgeHistory.ActionType.ADD
+        );
     }
 
     @Transactional
@@ -185,6 +192,13 @@ public class FridgeService {
             fridge.setUpdatedAt(LocalDateTime.now());
 
             fridgeRepository.save(fridge);
+
+            historyService.saveHistory(
+                    (long) user.getId(),
+                    dto.getIngredientName(),
+                    dto.getQuantity(),
+                    FridgeHistory.ActionType.ADD
+            );
         }
     }
 }

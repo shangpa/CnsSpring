@@ -8,6 +8,7 @@ import com.example.springjwt.admin.dto.*;
 import com.example.springjwt.board.BoardDetailResponseDTO;
 import com.example.springjwt.board.BoardRepository;
 import com.example.springjwt.board.BoardService;
+import com.example.springjwt.dto.CustomUserDetails;
 import com.example.springjwt.dto.JoinDTO;
 import com.example.springjwt.admin.dto.PointHistoryDTO;
 import com.example.springjwt.point.PointHistoryRepository;
@@ -28,6 +29,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -50,6 +52,7 @@ public class AdminController {
     private final TradePostRepository tradePostRepository;
     private final ReviewRepository reviewRepository;
     private final PointService pointService;
+    private final AdminService adminService;
 
     // 관리자 회원가입
     @PostMapping("/join")
@@ -430,5 +433,14 @@ public class AdminController {
         return pointService.getUsedHistory(userId).stream()
                 .map(PointHistoryDTO::from)
                 .toList();
+    }
+    @PostMapping("/users/{userId}/block")
+    public ResponseEntity<?> blockUser(
+            @PathVariable int userId,
+            @RequestBody BlockRequestDTO dto,
+            @AuthenticationPrincipal CustomUserDetails admin // 관리자의 username
+    ) {
+        adminService.blockUser(userId, admin.getUsername(), dto.getReason());
+        return ResponseEntity.ok("차단 완료");
     }
 }

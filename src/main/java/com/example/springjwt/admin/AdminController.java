@@ -273,9 +273,10 @@ public class AdminController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) Integer status,
-            @RequestParam(required = false) String sortBy
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String keyword // 🔍 추가
     ) {
-        return tradePostService.getTradePosts(page, size, status, sortBy);
+        return tradePostService.getTradePosts(page, size, status, sortBy, keyword);
     }
 
 
@@ -289,7 +290,7 @@ public class AdminController {
         return ResponseEntity.ok(tradePostService.getTradePostDetail(postId));
     }
 
-    /** todo 수정해야함
+    /**
      * [관리자용 거래글 삭제 API]
      *
      * 거래글을 삭제하면서 삭제한 관리자 ID와 사유를 함께 전달받아 로그로 기록합니다.

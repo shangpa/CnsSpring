@@ -316,7 +316,7 @@ public class TradePostService {
                 .collect(Collectors.toList());
     }
 
-    public Page<TradePostListResponseDTO> getTradePosts(int page, int size, Integer status, String sortBy) {
+    public Page<TradePostListResponseDTO> getTradePosts(int page, int size, Integer status, String sortBy, String keyword) {
         if (sortBy == null || sortBy.isEmpty()) {
             sortBy = "createdAt";
         }
@@ -324,7 +324,9 @@ public class TradePostService {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortBy));
         Page<TradePost> tradePosts;
 
-        if (status == null) {
+        if (keyword != null && !keyword.isBlank()) {
+            tradePosts = tradePostRepository.findByStatusAndTitleKeyword(status, keyword, pageable);
+        } else if (status == null) {
             tradePosts = tradePostRepository.findAll(pageable);
         } else {
             tradePosts = tradePostRepository.findByStatus(status, pageable);
@@ -339,6 +341,7 @@ public class TradePostService {
                 tp.getStatus()
         ));
     }
+
 
 
     public TradePostDetailResponseDTO getTradePostDetail(Long postId) {

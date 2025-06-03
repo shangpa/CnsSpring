@@ -116,5 +116,14 @@ public interface TradePostRepository extends JpaRepository<TradePost, Long> {
             "FROM TradePost t WHERE t.buyer.id = :userId ORDER BY t.createdAt DESC")
     List<UserTradePostSimpleDTO> findPurchasesByUserId(@Param("userId") int userId);
 
-
+    @Query("""
+    SELECT t FROM TradePost t
+    WHERE (:status IS NULL OR t.status = :status)
+    AND (:keyword IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%')))
+""")
+    Page<TradePost> findByStatusAndTitleKeyword(
+            @Param("status") Integer status,
+            @Param("keyword") String keyword,
+            Pageable pageable
+    );
 }

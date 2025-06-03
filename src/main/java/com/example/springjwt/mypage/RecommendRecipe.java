@@ -5,6 +5,8 @@ import com.example.springjwt.recipe.Recipe;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @Setter
@@ -21,4 +23,6 @@ public class RecommendRecipe {
 
     @ManyToOne(fetch = FetchType.LAZY)
     private Recipe recipe;
+
+    private LocalDateTime recommendedAt = LocalDateTime.now();
 }

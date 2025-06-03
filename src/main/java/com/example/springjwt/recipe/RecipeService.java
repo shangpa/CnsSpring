@@ -2,6 +2,8 @@ package com.example.springjwt.recipe;
 
 import com.example.springjwt.admin.dto.BoardMonthlyStatsDTO;
 import com.example.springjwt.admin.dto.RecipeMonthlyStatsDTO;
+import com.example.springjwt.admin.dto.RecipeStatDTO;
+import com.example.springjwt.admin.enums.StatType;
 import com.example.springjwt.fridge.Fridge;
 import com.example.springjwt.fridge.FridgeRepository;
 import com.example.springjwt.mypage.LikeRecipe;
@@ -18,6 +20,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -240,4 +243,29 @@ public class  RecipeService {
                 .collect(Collectors.toList());
     }
 
+    public List<RecipeStatDTO> getRecipeStats(StatType type, LocalDate startDate, LocalDate endDate, Integer year, Integer month) {
+        if (type == StatType.YEARLY && year != null) {
+            return recipeRepository.countByYear(year).stream()
+                    .map(obj -> new RecipeStatDTO(obj[0] + "월", (Long) obj[1]))
+                    .collect(Collectors.toList());
+
+        } else if (type == StatType.MONTHLY && year != null && month != null) {
+            return recipeRepository.countByMonth(year, month).stream()
+                    .map(obj -> new RecipeStatDTO(obj[0] + "일", (Long) obj[1]))
+                    .collect(Collectors.toList());
+
+        } else if (type == StatType.DAILY && startDate != null && endDate != null) {
+            return recipeRepository.countByDateRange(startDate.atStartOfDay(), endDate.atTime(23, 59, 59)).stream()
+                    .map(obj -> new RecipeStatDTO(obj[0].toString(), (Long) obj[1]))
+                    .collect(Collectors.toList());
+        }
+
+        throw new IllegalArgumentException("유효하지 않은 파라미터입니다.");
+    }
+
+    public List<RecipeStatDTO> getCategoryStats() {
+        return recipeRepository.countByCategory().stream()
+                .map(obj -> new RecipeStatDTO(obj[0].toString(), (Long) obj[1]))
+                .collect(Collectors.toList());
+    }
 }

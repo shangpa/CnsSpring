@@ -94,5 +94,19 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
                                                                   @Param("keyword") String keyword,
                                                                   Pageable pageable);
 
+    // 연도별 - 월 단위 집계
+    @Query("SELECT MONTH(r.createdAt), COUNT(r) FROM Recipe r WHERE YEAR(r.createdAt) = :year GROUP BY MONTH(r.createdAt)")
+    List<Object[]> countByYear(@Param("year") int year);
 
+    // 월별 - 일 단위 집계
+    @Query("SELECT DAY(r.createdAt), COUNT(r) FROM Recipe r WHERE YEAR(r.createdAt) = :year AND MONTH(r.createdAt) = :month GROUP BY DAY(r.createdAt)")
+    List<Object[]> countByMonth(@Param("year") int year, @Param("month") int month);
+
+    // 기간별 - 날짜 단위 집계
+    @Query("SELECT DATE(r.createdAt), COUNT(r) FROM Recipe r WHERE r.createdAt BETWEEN :start AND :end GROUP BY DATE(r.createdAt)")
+    List<Object[]> countByDateRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    //카테고리 통계
+    @Query("SELECT r.category, COUNT(r) FROM Recipe r GROUP BY r.category")
+    List<Object[]> countByCategory();
 }

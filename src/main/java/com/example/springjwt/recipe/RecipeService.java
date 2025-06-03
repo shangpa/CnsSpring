@@ -268,4 +268,18 @@ public class  RecipeService {
                 .map(obj -> new RecipeStatDTO(obj[0].toString(), (Long) obj[1]))
                 .collect(Collectors.toList());
     }
+
+    //레시피 검색 - 제철 음식 추천
+    public List<RecipeDTO> findRecipesByTitlesContaining(List<String> keywords) {
+        List<Recipe> allPublic = recipeRepository.findByIsPublicTrue();
+
+        List<Recipe> filtered = allPublic.stream()
+                .filter(r -> keywords.stream()
+                        .anyMatch(k -> r.getTitle().toLowerCase().contains(k.toLowerCase())))
+                .collect(Collectors.toList());
+
+        return filtered.stream()
+                .map(RecipeDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
 }

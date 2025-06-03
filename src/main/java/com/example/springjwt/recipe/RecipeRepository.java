@@ -110,4 +110,7 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
     //카테고리 통계
     @Query("SELECT r.category, COUNT(r) FROM Recipe r GROUP BY r.category")
     List<Object[]> countByCategory();
+
+    //레시피 검색 - 제철 음식 추천
+    List<Recipe> findByTitleInAndIsPublicTrue(List<String> titles);
 }

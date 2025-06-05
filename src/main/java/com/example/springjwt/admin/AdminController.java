@@ -811,4 +811,51 @@ public class AdminController {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         return reportService.searchCommentReports(keyword, pageable);
     }
+
+    /**
+     * [GET] /admin/boards/logs/deleted
+     * 삭제된 게시글 로그 리스트 조회 (페이징)
+     * - 응답: 삭제한 관리자 아이디(adminUsername), 작업(action), 대상 타입(targetType),
+     *         대상 ID(targetId), 상세 사유(reason), 삭제 일시(createdAt)
+     * - 예시: /admin/boards/logs/deleted?page=0&size=10
+     */
+    @GetMapping("/boards/logs/deleted")
+    public Page<DeletedLogDTO> getDeletedLogs(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return adminLogRepository.findDeletedLogs(pageable)
+                .map(log -> new DeletedLogDTO(
+                        log.getAdminUsername(),
+                        log.getAction(),
+                        log.getTargetType(),
+                        log.getTargetId(),
+                        log.getReason(),
+                        log.getCreatedAt()
+                ));
+    }
+    /**
+     * [GET] /admin/comments/logs/deleted
+     * 삭제된 댓글 로그 리스트 조회 (페이징)
+     * - 응답: 삭제한 관리자(adminUsername), 작업(action), 대상 타입(targetType),
+     *         대상 ID(targetId), 삭제 사유(reason), 삭제 일시(createdAt)
+     * - 예시: /admin/comments/logs/deleted?page=0&size=10
+     */
+    @GetMapping("/comments/logs/deleted")
+    public Page<DeletedLogDTO> getDeletedCommentLogs(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return adminLogRepository.findDeletedCommentLogs(pageable)
+                .map(log -> new DeletedLogDTO(
+                        log.getAdminUsername(),
+                        log.getAction(),
+                        log.getTargetType(),
+                        log.getTargetId(),
+                        log.getReason(),
+                        log.getCreatedAt()
+                ));
+    }
 }

@@ -111,6 +111,25 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
     @Query("SELECT r.category, COUNT(r) FROM Recipe r GROUP BY r.category")
     List<Object[]> countByCategory();
 
+    //카테고리별 통계
+    @Query("""
+    SELECT FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m'), COUNT(r)
+    FROM Recipe r
+    GROUP BY FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m')
+    ORDER BY FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m')
+    """)
+    List<Object[]> countMonthlyAllCategories();
+
+    @Query("""
+    SELECT FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m'), COUNT(r)
+    FROM Recipe r
+    WHERE r.category = :category
+    GROUP BY FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m')
+    ORDER BY FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m')
+    """)
+    List<Object[]> countMonthlyBySpecificCategory(@Param("category") RecipeCategory category);
+
+
     //레시피 검색 - 제철 음식 추천
     List<Recipe> findByTitleInAndIsPublicTrue(List<String> titles);
 }

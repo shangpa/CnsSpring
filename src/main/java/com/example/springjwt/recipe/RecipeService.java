@@ -263,10 +263,22 @@ public class  RecipeService {
         throw new IllegalArgumentException("유효하지 않은 파라미터입니다.");
     }
 
+    //관리자 - 카테고리별 통계
     public List<RecipeStatDTO> getCategoryStats() {
-        return recipeRepository.countByCategory().stream()
+        return recipeRepository.countMonthlyAllCategories().stream()
                 .map(obj -> new RecipeStatDTO(obj[0].toString(), (Long) obj[1]))
                 .collect(Collectors.toList());
+    }
+
+    public List<RecipeStatDTO> getMonthlyCategoryStatsByName(String category) {
+        try {
+            RecipeCategory enumCategory = RecipeCategory.valueOf(category);
+            return recipeRepository.countMonthlyBySpecificCategory(enumCategory).stream()
+                    .map(obj -> new RecipeStatDTO(obj[0].toString(), (Long) obj[1]))
+                    .collect(Collectors.toList());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("유효하지 않은 카테고리입니다: " + category);
+        }
     }
 
     //레시피 검색 - 제철 음식 추천
@@ -282,4 +294,5 @@ public class  RecipeService {
                 .map(RecipeDTO::fromEntity)
                 .collect(Collectors.toList());
     }
+       
 }

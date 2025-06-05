@@ -737,8 +737,15 @@ public class AdminController {
      * - 응답: 한식, 중식, 양식 등 카테고리별 레시피 수
      */
     @GetMapping("/stats/recipes/categories")
-    public ResponseEntity<List<RecipeStatDTO>> getCategoryStats() {
-        return ResponseEntity.ok(recipeService.getCategoryStats());
+    public ResponseEntity<List<RecipeStatDTO>> getCategoryStats(
+            @RequestParam(required = false) String category) {
+        System.out.println("카테고리 파라미터: " + category);
+
+        if (category != null && !category.equals("전체")) {
+            return ResponseEntity.ok(recipeService.getMonthlyCategoryStatsByName(category));
+        } else {
+            return ResponseEntity.ok(recipeService.getCategoryStats());
+        }
     }
 
     /**

@@ -30,4 +30,5 @@ public interface LikeRecipeRepository extends JpaRepository<LikeRecipe, Long> {
     @Query("SELECT DATE(l.likedAt), COUNT(l) FROM LikeRecipe l WHERE l.likedAt BETWEEN :start AND :end GROUP BY DATE(l.likedAt)")
     List<Object[]> countLikesByDateRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
+    void deleteAllByRecipe(Recipe recipe);
 }

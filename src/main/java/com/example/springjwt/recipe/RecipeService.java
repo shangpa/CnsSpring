@@ -4,12 +4,14 @@ import com.example.springjwt.admin.dto.BoardMonthlyStatsDTO;
 import com.example.springjwt.admin.dto.RecipeMonthlyStatsDTO;
 import com.example.springjwt.admin.dto.RecipeStatDTO;
 import com.example.springjwt.admin.enums.StatType;
+import com.example.springjwt.admin.log.AdminLogService;
 import com.example.springjwt.fridge.Fridge;
 import com.example.springjwt.fridge.FridgeRepository;
 import com.example.springjwt.mypage.LikeRecipe;
 import com.example.springjwt.mypage.LikeRecipeRepository;
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
+import com.example.springjwt.mypage.RecommendRecipeRepository;
 import com.example.springjwt.point.PointActionType;
 import com.example.springjwt.point.PointService;
 import com.example.springjwt.review.Recipe.ReviewRepository;
@@ -19,6 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.Map;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -37,6 +41,8 @@ public class  RecipeService {
     private final PointService pointService;
     private final LikeRecipeRepository likeRecipeRepository;
     private final FridgeRepository fridgeRepository;
+    private final AdminLogService adminLogService;
+    private final RecommendRecipeRepository recommendRecipeRepository;
 
     // 전체 레시피 조회
     public List<Recipe> getAllRecipes() {
@@ -306,5 +312,33 @@ public class  RecipeService {
                 .map(RecipeDTO::fromEntity)
                 .collect(Collectors.toList());
     }
-       
+
+    @Transactional
+    public void deleteRecipeByAdmin(Long recipeId, String adminUsername, String reason) {
+        Recipe recipe = recipeRepository.findById(recipeId)
+                .orElseThrow(() -> new IllegalArgumentException("레시피가 존재하지 않습니다."));
+
+        // 1. 좋아요 삭제
+        likeRecipeRepository.deleteAllByRecipe(recipe);
+
+        // 2. 리뷰 삭제
+        reviewRepository.deleteAllByRecipe(recipe);
+
+        //3 추천 삭제
+        recommendRecipeRepository.deleteAllByRecipe(recipe);
+
+        // 4. 레시피 삭제
+        recipeRepository.delete(recipe);
+
+        // 5. 관리자 로그 기록
+        adminLogService.logAdminAction(
+                adminUsername,
+                "DELETE_RECIPE",
+                "RECIPE",
+                recipeId,
+                reason
+        );
+    }
+
+
 }

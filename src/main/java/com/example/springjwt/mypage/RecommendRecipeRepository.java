@@ -25,4 +25,6 @@ public interface RecommendRecipeRepository extends JpaRepository<RecommendRecipe
     @Query("SELECT DATE(r.recommendedAt), COUNT(r) FROM RecommendRecipe r WHERE r.recommendedAt BETWEEN :start AND :end GROUP BY DATE(r.recommendedAt)")
     List<Object[]> countByDateRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
+    void deleteAllByRecipe(Recipe recipe);
+
 }

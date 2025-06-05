@@ -3,6 +3,8 @@ package com.example.springjwt.review.Recipe;
 
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
+import com.example.springjwt.User.UserService;
+import com.example.springjwt.admin.log.AdminLogService;
 import com.example.springjwt.notification.FCMService;
 import com.example.springjwt.recipe.Recipe;
 import com.example.springjwt.recipe.RecipeCategory;
@@ -24,6 +26,7 @@ public class ReviewService {
     private final RecipeRepository recipeRepository;
     private final UserRepository userRepository;
     private final FCMService fcmService;
+    private final AdminLogService adminLogService;
 
     // 리뷰 작성
     @Transactional
@@ -114,6 +117,21 @@ public class ReviewService {
         return reviews.stream()
                 .map(ReviewResponseDTO::fromEntity)
                 .collect(Collectors.toList());
+    }
+    @Transactional
+    public void deleteReviewByAdmin(Long reviewId, String adminUsername, String reason) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new IllegalArgumentException("리뷰가 존재하지 않습니다."));
+
+        reviewRepository.delete(review);
+
+        adminLogService.logAdminAction(
+                adminUsername,
+                "DELETE_RECIPE_REVIEW",
+                "RECIPE_REVIEW",
+                reviewId,
+                reason
+        );
     }
 
 }

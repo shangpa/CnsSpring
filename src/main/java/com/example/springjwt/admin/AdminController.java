@@ -26,6 +26,7 @@ import com.example.springjwt.recipe.RecipeService;
 import com.example.springjwt.report.ReportRepository;
 import com.example.springjwt.report.ReportService;
 import com.example.springjwt.review.Recipe.ReviewRepository;
+import com.example.springjwt.review.Recipe.ReviewService;
 import com.example.springjwt.review.TradePost.TpReviewRepository;
 import com.example.springjwt.tradepost.TradePostRepository;
 import com.example.springjwt.tradepost.TradePostService;
@@ -68,6 +69,7 @@ public class AdminController {
     private final AdminLogRepository adminLogRepository;
     private final LikeRecipeRepository likeRecipeRepository;
     private final RecommendRecipeRepository recommendRecipeRepository;
+    private final ReviewService reviewService;
 
     // 관리자 회원가입
     @PostMapping("/join")
@@ -858,4 +860,66 @@ public class AdminController {
                         log.getCreatedAt()
                 ));
     }
+
+    /**
+     * [GET] /admin/recipes/logs/deleted
+     * 삭제된 레시피 로그 리스트 조회 (페이징)
+     * - 응답: 삭제한 관리자(adminUsername), 작업(action), 대상 타입(targetType),
+     *         대상 ID(targetId), 삭제 사유(reason), 삭제 일시(createdAt)
+     * - 예시: /admin/recipes/logs/deleted?page=0&size=10
+     */
+    @GetMapping("/recipes/logs/deleted")
+    public Page<DeletedLogDTO> getDeletedRecipeLogs(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return adminLogRepository.findDeletedRecipeLogs(pageable)
+                .map(log -> new DeletedLogDTO(
+                        log.getAdminUsername(),
+                        log.getAction(),
+                        log.getTargetType(),
+                        log.getTargetId(),
+                        log.getReason(),
+                        log.getCreatedAt()
+                ));
+    }
+    /**
+     * [DELETE] /admin/recipes/reviews/{reviewId}
+     * 레시피 리뷰 삭제
+     * - 관리자 로그 기록 포함
+     */
+    @DeleteMapping("/recipes/reviews/{reviewId}")
+    public ResponseEntity<Void> deleteRecipeReviewByAdmin(
+            @PathVariable Long reviewId,
+            @RequestParam String reason,
+            @AuthenticationPrincipal CustomUserDetails admin
+    ) {
+        reviewService.deleteReviewByAdmin(reviewId, admin.getUsername(), reason);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * [GET] /admin/recipes/reviews/logs/deleted
+     * 삭제된 레시피 리뷰 로그 리스트 조회 (페이징)
+     * - 응답: 삭제한 관리자(adminUsername), 작업(action), 대상 타입(targetType),
+     *         대상 ID(targetId), 삭제 사유(reason), 삭제 일시(createdAt)
+     */
+    @GetMapping("/recipes/reviews/logs/deleted")
+    public Page<DeletedLogDTO> getDeletedRecipeReviewLogs(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return adminLogRepository.findDeletedRecipeReviewLogs(pageable)
+                .map(log -> new DeletedLogDTO(
+                        log.getAdminUsername(),
+                        log.getAction(),
+                        log.getTargetType(),
+                        log.getTargetId(),
+                        log.getReason(),
+                        log.getCreatedAt()
+                ));
+    }
+
 }

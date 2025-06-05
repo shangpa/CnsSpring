@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.json.JSONArray;
 import org.json.JSONObject;
-
+import java.util.Map;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -265,9 +265,21 @@ public class  RecipeService {
 
     //관리자 - 카테고리별 통계
     public List<RecipeStatDTO> getCategoryStats() {
-        return recipeRepository.countMonthlyAllCategories().stream()
-                .map(obj -> new RecipeStatDTO(obj[0].toString(), (Long) obj[1]))
-                .collect(Collectors.toList());
+        List<Object[]> raw = recipeRepository.countByCategory();
+
+        Map<RecipeCategory, Long> map = raw.stream()
+                .collect(Collectors.toMap(
+                        obj -> (RecipeCategory) obj[0],
+                        obj -> (Long) obj[1]
+                ));
+
+        List<RecipeStatDTO> result = new ArrayList<>();
+        for (RecipeCategory category : RecipeCategory.values()) {
+            long count = map.getOrDefault(category, 0L);
+            result.add(new RecipeStatDTO(category.name(), count));
+        }
+
+        return result;
     }
 
     public List<RecipeStatDTO> getMonthlyCategoryStatsByName(String category) {

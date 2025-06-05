@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -31,6 +32,12 @@ public class FridgeHistory {
     private ActionType actionType;
 
     private LocalDateTime actionDate;
+
+    @Column
+    private String dateOption;
+
+    @Column
+    private LocalDate fridgeDate;
 
     @PrePersist
     protected void onCreate() {

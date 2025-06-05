@@ -47,6 +47,8 @@ public class FridgeService {
                 (long) user.getId(),
                 fridge.getIngredientName(),
                 fridge.getQuantity(),
+                fridge.getFridgeDate(),
+                fridge.getDateOption(),
                 FridgeHistory.ActionType.ADD
         );
 
@@ -105,15 +107,17 @@ public class FridgeService {
 
 
     // 삭제
-    public void deleteFridge(Long id, UserEntity user) {
-        Fridge fridge = fridgeRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Fridge not found"));
+    @Transactional
+    public void deleteFridgesByName(String ingredientName, UserEntity user) {
+        List<Fridge> fridges = fridgeRepository.findAllByUserAndIngredientName(user, ingredientName);
 
-        if (fridge.getUser().getId() != user.getId()) {
-            throw new AccessDeniedException("해당 냉장고 항목에 대한 삭제 권한이 없습니다.");
+        if (fridges.isEmpty()) {
+            throw new IllegalArgumentException("사용자의 냉장고에 '" + ingredientName + "' 재료가 없습니다.");
         }
-        fridgeRepository.delete(fridge);
+
+        fridgeRepository.deleteAll(fridges); // 성능상 delete 반복보다 효율적
     }
+
 
     //유통기한 찾기
     public List<Fridge> getExpiringFridgeItems(int daysLeft) {
@@ -130,25 +134,42 @@ public class FridgeService {
     @Transactional
     public void useIngredients(List<UsedIngredientDTO> ingredients, UserEntity user) {
         for (UsedIngredientDTO dto : ingredients) {
-            Fridge fridge = fridgeRepository.findByUserAndIngredientName(user, dto.getName())
-                    .orElseThrow(() -> new IllegalArgumentException("재료를 찾을 수 없습니다: " + dto.getName()));
+            List<Fridge> fridgeList = fridgeRepository
+                    .findAllByUserAndIngredientNameOrderByCreatedAtAsc(user, dto.getName());
 
-            double remaining = fridge.getQuantity() - dto.getAmount();
-            if (remaining < 0) {
-                throw new IllegalStateException("재료 수량이 부족합니다: " + dto.getName());
+            if (fridgeList.isEmpty()) {
+                throw new IllegalArgumentException("재료를 찾을 수 없습니다: " + dto.getName());
             }
 
-            fridge.setQuantity(remaining);
-            fridge.setUpdatedAt(LocalDateTime.now());
-            fridgeRepository.save(fridge); // 꼭 저장해줘야 DB 반영됨
+            double remainingToUse = dto.getAmount();
 
-            // 사용 이력 기록 추가
-            historyService.saveHistory(
-                    (long) user.getId(), // int → Long 변환
-                    dto.getName(),
-                    dto.getAmount(),
-                    FridgeHistory.ActionType.USE
-            );
+            for (Fridge fridge : fridgeList) {
+                if (remainingToUse <= 0) break;
+
+                double available = fridge.getQuantity();
+                double usedAmount = Math.min(available, remainingToUse);
+
+                if (usedAmount > 0) {
+                    fridge.setQuantity(available - usedAmount);
+                    fridge.setUpdatedAt(LocalDateTime.now());
+                    fridgeRepository.save(fridge);
+
+                    historyService.saveHistory(
+                            (long) user.getId(),
+                            dto.getName(),
+                            usedAmount,
+                            fridge.getFridgeDate(),
+                            fridge.getDateOption(),
+                            FridgeHistory.ActionType.USE
+                    );
+
+                    remainingToUse -= usedAmount;
+                }
+            }
+
+            if (remainingToUse > 0) {
+                throw new IllegalStateException("재료 수량이 부족합니다: " + dto.getName());
+            }
         }
     }
 
@@ -172,6 +193,8 @@ public class FridgeService {
                 (long) user.getId(),
                 dto.getIngredientName(),
                 dto.getQuantity(),
+                LocalDate.parse(dto.getFridgeDate()),
+                dto.getDateOption(),
                 FridgeHistory.ActionType.ADD
         );
     }
@@ -197,6 +220,8 @@ public class FridgeService {
                     (long) user.getId(),
                     dto.getIngredientName(),
                     dto.getQuantity(),
+                    LocalDate.parse(dto.getFridgeDate()),
+                    dto.getDateOption(),
                     FridgeHistory.ActionType.ADD
             );
         }

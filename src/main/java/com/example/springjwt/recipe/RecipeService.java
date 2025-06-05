@@ -23,13 +23,9 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Map;
+import java.util.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -200,8 +196,6 @@ public class  RecipeService {
         Recipe recipe = recipeRepository.findById(recipeId)
                 .orElseThrow(() -> new RuntimeException("레시피를 찾을 수 없습니다."));
 
-        List<Fridge> fridgeList = fridgeRepository.findByUserIdOrderByUpdatedAtDesc((long) user.getId());
-
         JSONArray ingredients = new JSONArray(recipe.getIngredients());
         List<ExpectedIngredientDTO> result = new ArrayList<>();
 
@@ -211,22 +205,36 @@ public class  RecipeService {
             String amount = item.optString("amount", "").trim();
 
             if (!name.isEmpty()) {
-                fridgeList.stream()
-                        .filter(f -> f.getIngredientName().contains(name))
-                        .findFirst()
-                        .ifPresent(fridgeItem -> {
-                            result.add(new ExpectedIngredientDTO(
-                                    name,
-                                    amount,
-                                    fridgeItem.getQuantity() + " " + fridgeItem.getUnitDetail(),
-                                    fridgeItem.getFridgeDate() != null ? fridgeItem.getFridgeDate().toString() : "날짜 없음"
-                            ));
-                        });
+                List<Fridge> matched = fridgeRepository.findAllByUserAndIngredientNameOrderByCreatedAtAsc(user, name);
+
+                if (!matched.isEmpty()) {
+                    double totalQuantity = matched.stream()
+                            .mapToDouble(Fridge::getQuantity)
+                            .sum();
+
+                    String unitDetail = matched.get(0).getUnitDetail(); // 같은 재료는 단위 동일하다고 가정
+
+                    // 가장 오래된 fridgeDate 사용
+                    String date = matched.stream()
+                            .map(Fridge::getFridgeDate)
+                            .filter(Objects::nonNull)
+                            .map(Object::toString)
+                            .findFirst()
+                            .orElse("날짜 없음");
+
+                    result.add(new ExpectedIngredientDTO(
+                            name,
+                            amount,
+                            totalQuantity + " " + unitDetail,
+                            date
+                    ));
+                }
             }
         }
 
         return result;
     }
+
     // RecipeService.java
     public List<RecipeMonthlyStatsDTO> getRecentFourMonthsStats() {
         LocalDateTime now = LocalDateTime.now();

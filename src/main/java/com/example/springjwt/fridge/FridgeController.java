@@ -82,15 +82,15 @@ public class FridgeController {
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteFridge(@PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) {
-        System.out.println("authorization now");
+    @DeleteMapping("/delete-by-name")
+    public ResponseEntity<Void> deleteFridgesByName(
+            @RequestParam String ingredientName,
+            @AuthenticationPrincipal UserDetails userDetails) {
 
-        String username = userDetails.getUsername();
-        UserEntity user = userRepository.findOptionalByUsername(username)
+        UserEntity user = userRepository.findOptionalByUsername(userDetails.getUsername())
                 .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
 
-        fridgeService.deleteFridge(id, user);
+        fridgeService.deleteFridgesByName(ingredientName, user);
         return ResponseEntity.ok().build();
     }
 

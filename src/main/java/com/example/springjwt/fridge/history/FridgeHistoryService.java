@@ -7,6 +7,7 @@ import com.example.springjwt.fridge.FridgeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -19,7 +20,7 @@ public class FridgeHistoryService {
     private final UserRepository userRepository;
 
     // 기록 저장
-    public void saveHistory(Long userId, String ingredientName, double quantity, FridgeHistory.ActionType type) {
+    public void saveHistory(Long userId, String ingredientName, double quantity, LocalDate fridgeDate, String dateOption, FridgeHistory.ActionType type) {
         UserEntity user = userRepository.findById(userId.intValue())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
@@ -27,6 +28,8 @@ public class FridgeHistoryService {
         history.setUser(user);
         history.setIngredientName(ingredientName);
         history.setQuantity(quantity);
+        history.setFridgeDate(fridgeDate);
+        history.setDateOption(dateOption);
         history.setActionType(type);
         history.setActionDate(LocalDateTime.now());
 
@@ -71,7 +74,9 @@ public class FridgeHistoryService {
                 history.getQuantity(),
                 unit,
                 history.getActionType().name(),
-                history.getActionDate()
+                history.getActionDate(),
+                history.getFridgeDate(),
+                history.getDateOption()
         );
     }
 }

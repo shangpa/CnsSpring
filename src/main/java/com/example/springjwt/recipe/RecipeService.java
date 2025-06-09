@@ -224,8 +224,9 @@ public class  RecipeService {
 
                     result.add(new ExpectedIngredientDTO(
                             name,
-                            amount,
-                            totalQuantity + " " + unitDetail,
+                            amount,                    // 조리용 필요 수량
+                            String.valueOf(totalQuantity), // 냉장고 보유량 (숫자만)
+                            unitDetail,               // 단위 ("g", "ml", "개")
                             date
                     ));
                 }

@@ -31,6 +31,5 @@ public class RecipeIngredientCacheInitializer {
 
         ingredientNameCache.initialize(allIngredientNames);
         System.out.println("✅ 재료 이름 캐시 초기화 완료: 총 " + allIngredientNames.size() + "개");
-        ingredientNameCache.getAll().forEach(name -> System.out.println(" - " + name));
     }
 }

@@ -47,7 +47,7 @@ public class VisionAnalyzeService {
         Map<String, String> engToKor = korToEng.entrySet().stream()
                 .collect(Collectors.toMap(e -> e.getValue().toLowerCase(), Map.Entry::getKey));
         System.out.println("🧠 [VisionAnalyzeService] 역매핑 (영→한): " + engToKor);
-        Long userId = (long) user.getId();
+        long userId = (long) user.getId();
 
         for (String label : detectedLabels) {
             String labelLower = label.toLowerCase();
@@ -58,7 +58,7 @@ public class VisionAnalyzeService {
                 Fridge fridge = new Fridge();
                 fridge.setIngredientName(korName);
                 fridge.setStorageArea("냉장");
-                fridge.setQuantity(1.0);
+                fridge.setQuantity(Double.valueOf(1.0D));
                 fridge.setUnitCategory(UnitCategory.COUNT);
                 fridge.setUnitDetail("개");
                 fridge.setFridgeDate(LocalDate.now());
@@ -66,7 +66,7 @@ public class VisionAnalyzeService {
                 fridge.setUpdatedAt(LocalDateTime.now());
                 fridge.setUser(user);
 
-                fridgeService.createFridge(fridge, userId); // 히스토리도 같이 저장됨
+                fridgeService.createFridge(fridge, Long.valueOf(userId)); // 히스토리도 같이 저장됨
                 System.out.println("✅ [VisionAnalyzeService] 저장 시도: " + korName);
 
                 savedIngredients.add(korName);

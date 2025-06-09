@@ -72,7 +72,7 @@ public class SecurityConfig {
                                 "/api/recipes/public", "/api/recipes/public/**",
                                 "/api/recipes/search", "/api/search/popular-keywords",
                                 "/api/trade-posts", "/api/trade-posts/**", "/api/main",
-                                "/api/boards/mine", "/trade-posts/popular", "/ws/**"
+                                "/api/boards/mine", "/trade-posts/popular", "/api/recipes/seasonal","/ws/**"
                         ).permitAll()
                         .requestMatchers("/api/trade-posts/*/complete-request").authenticated()
                         .requestMatchers("/api/user/**", "/api/fridges/ocr").authenticated()

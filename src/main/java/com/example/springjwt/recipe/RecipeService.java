@@ -312,14 +312,15 @@ public class  RecipeService {
         List<Recipe> allPublic = recipeRepository.findByIsPublicTrue();
 
         List<Recipe> filtered = allPublic.stream()
-                .filter(r -> keywords.stream()
-                        .anyMatch(k -> r.getTitle().toLowerCase().contains(k.toLowerCase())))
+                .filter(recipe -> keywords.stream()
+                        .anyMatch(keyword -> recipe.getTitle().toLowerCase().contains(keyword.toLowerCase())))
                 .collect(Collectors.toList());
 
         return filtered.stream()
                 .map(RecipeDTO::fromEntity)
                 .collect(Collectors.toList());
     }
+
 
     @Transactional
     public void deleteRecipeByAdmin(Long recipeId, String adminUsername, String reason) {

@@ -11,4 +11,5 @@ public class ExpectedIngredientDTO {
     private String amountInFridge;
     private String unit;
     private String date;
+    private String dateOption;
 }

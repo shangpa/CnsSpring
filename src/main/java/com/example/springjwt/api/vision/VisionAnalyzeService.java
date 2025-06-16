@@ -45,8 +45,11 @@ public class VisionAnalyzeService {
         System.out.println("🧠 [VisionAnalyzeService] 번역 매핑 (한→영): " + korToEng);
         // 영문 → 한글 역매핑 생성
         Map<String, String> engToKor = korToEng.entrySet().stream()
-                .collect(Collectors.toMap(e -> e.getValue().toLowerCase(), Map.Entry::getKey));
-        System.out.println("🧠 [VisionAnalyzeService] 역매핑 (영→한): " + engToKor);
+                .collect(Collectors.toMap(
+                        e -> e.getValue().toLowerCase(),  // 영어 키
+                        Map.Entry::getKey,                // 대응되는 한글 값
+                        (existing, replacement) -> existing // 충돌 시 기존 값 유지
+                ));System.out.println("🧠 [VisionAnalyzeService] 역매핑 (영→한): " + engToKor);
         long userId = (long) user.getId();
 
         for (String label : detectedLabels) {

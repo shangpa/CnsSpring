@@ -5,6 +5,7 @@ import com.example.springjwt.admin.dto.RecipeMonthlyStatsDTO;
 import com.example.springjwt.admin.dto.RecipeStatDTO;
 import com.example.springjwt.admin.enums.StatType;
 import com.example.springjwt.admin.log.AdminLogService;
+import com.example.springjwt.api.vision.IngredientParser;
 import com.example.springjwt.fridge.Fridge;
 import com.example.springjwt.fridge.FridgeRepository;
 import com.example.springjwt.mypage.LikeRecipe;
@@ -14,6 +15,7 @@ import com.example.springjwt.User.UserRepository;
 import com.example.springjwt.mypage.RecommendRecipeRepository;
 import com.example.springjwt.point.PointActionType;
 import com.example.springjwt.point.PointService;
+import com.example.springjwt.recipe.cashe.IngredientNameCache;
 import com.example.springjwt.review.Recipe.ReviewRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -39,7 +41,8 @@ public class  RecipeService {
     private final FridgeRepository fridgeRepository;
     private final AdminLogService adminLogService;
     private final RecommendRecipeRepository recommendRecipeRepository;
-
+    private final IngredientNameCache ingredientNameCache;
+    private final IngredientParser ingredientParser;
     // 전체 레시피 조회
     public List<Recipe> getAllRecipes() {
         return recipeRepository.findAll();
@@ -94,7 +97,6 @@ public class  RecipeService {
     public Recipe createRecipe(RecipeDTO recipeDTO, String username) {
         UserEntity user = userRepository.findByUsername(username);
         Recipe recipe = recipeDTO.toEntity();
-        System.out.println("로그인 된 유저 :"+user.getUsername());
         recipe.setUser(user); // 로그인한 유저를 레시피 작성자로 설정
         pointService.addPoint(
                 user,
@@ -102,7 +104,15 @@ public class  RecipeService {
                 1,
                 "레시피 작성 포인트 10점 적립"
         );
-        return recipeRepository.save(recipe);
+        Recipe savedRecipe = recipeRepository.save(recipe);
+
+        // 재료 JSON에서 재료명 파싱 → 캐시에 추가
+        List<String> ingredientNames = ingredientParser.extractNames(recipeDTO.getIngredients());
+        ingredientNameCache.addFromNames(ingredientNames);
+
+        System.out.println("새 레시피 등록 시 캐시에 추가된 재료: " + ingredientNames);
+
+        return savedRecipe;
     }
 
     // 레시피 수정

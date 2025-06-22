@@ -1,5 +1,7 @@
 package com.example.springjwt.tradepost;
 
+import com.example.springjwt.User.UserEntity;
+import com.example.springjwt.User.UserRepository;
 import com.example.springjwt.User.UserService;
 import com.example.springjwt.dto.CustomUserDetails;
 import com.example.springjwt.tradepost.request.TradeCompleteRequest;
@@ -23,6 +25,7 @@ public class TradePostController {
     private final UserService userService;
     private final TradeCompleteRequestService tradeCompleteRequestService;
     private final TradeCompleteRequestRepository tradeCompleteRequestRepository;
+    private final UserRepository userRepository;
     // 거래글 생성
     @PostMapping
     public ResponseEntity<TradePostDTO> createTradePost(@RequestBody TradePostDTO dto,
@@ -172,6 +175,13 @@ public class TradePostController {
             @PathVariable int status
     ) {
         return ResponseEntity.ok(tradePostService.getPostsByUsernameAndStatus(username, status));
+    }
+    @GetMapping("/info")
+    public ResponseEntity<UserProfileResponseDTO> getUserProfileInfo(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        String username = userDetails.getUsername();
+        UserEntity user = userRepository.findByUsername(username);
+        return ResponseEntity.ok(tradePostService.getUserProfile(user));
     }
 
 }

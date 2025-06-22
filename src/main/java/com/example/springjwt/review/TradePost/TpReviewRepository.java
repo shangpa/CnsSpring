@@ -1,5 +1,6 @@
 package com.example.springjwt.review.TradePost;
 
+import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.admin.dto.TpReviewSimpleDTO;
 import com.example.springjwt.tradepost.TradePost;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -26,4 +27,9 @@ public interface TpReviewRepository extends JpaRepository<TpReview, Long> {
             "r.tpReviewId, r.tradePost.title, r.content, r.createdAt) " +
             "FROM TpReview r WHERE r.tradePost.user.id = :userId ORDER BY r.createdAt DESC")
     List<TpReviewSimpleDTO> findReviewsReceivedByUser(@Param("userId") int userId);
+
+    int countByUser(UserEntity user);
+
+    @Query("SELECT AVG(r.rating) FROM TpReview r WHERE r.user.id = :userId")
+    Double avgRatingByUser(Long userId);
 }

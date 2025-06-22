@@ -14,14 +14,15 @@ public class TpReviewResponseDTO {
     private int rating;        // 별점
     private LocalDateTime createdAt; // 작성일시
     private String username;   // 작성자 이름
-
+    private String tradeTitle;
     public static TpReviewResponseDTO fromEntity(TpReview tpReview) {
         return TpReviewResponseDTO.builder()
                 .tpReviewId(tpReview.getTpReviewId())
                 .content(tpReview.getContent())
-                .rating(tpReview.getRating())
+                .rating(tpReview.getRating()    )
                 .createdAt(tpReview.getCreatedAt())
                 .username(tpReview.getUser().getUsername())
+                .tradeTitle(tpReview.getTradePost().getTitle())
                 .build();
     }
 }

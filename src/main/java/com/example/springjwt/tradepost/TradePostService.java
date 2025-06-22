@@ -405,6 +405,25 @@ public class TradePostService {
                 reason
         );
     }
+    public UserProfileResponseDTO getUserProfile(UserEntity user) {
+        System.out.println("🔥 조회된 유저: " + user.getUsername()); // null 아닌지 확인
+
+        int reviewCount = tpReviewRepository.countByUser(user);
+        Double avgRating = tpReviewRepository.avgRatingByUser((long) user.getId());
+        double rating = (avgRating != null) ? Math.round(avgRating * 10) / 10.0 : 0.0;
+        int transactionCount = tradePostRepository.countByUser(user);
+
+        UserProfileResponseDTO dto = new UserProfileResponseDTO(
+                user.getUsername(),
+                rating,
+                reviewCount,
+                transactionCount
+        );
+
+        System.out.println("📦 프로필 DTO: " + dto); // 로그 출력
+
+        return dto;
+    }
 
 
 }

@@ -5,6 +5,7 @@ import com.example.springjwt.admin.dto.RecipeMonthlyStatsDTO;
 import com.example.springjwt.admin.dto.RecipeStatDTO;
 import com.example.springjwt.admin.enums.StatType;
 import com.example.springjwt.admin.log.AdminLogService;
+import com.example.springjwt.api.OpenAiService;
 import com.example.springjwt.api.vision.IngredientParser;
 import com.example.springjwt.fridge.Fridge;
 import com.example.springjwt.fridge.FridgeRepository;
@@ -17,6 +18,8 @@ import com.example.springjwt.point.PointActionType;
 import com.example.springjwt.point.PointService;
 import com.example.springjwt.recipe.cashe.IngredientNameCache;
 import com.example.springjwt.review.Recipe.ReviewRepository;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -25,6 +28,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.lang.reflect.Type;
 import java.util.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -43,6 +47,7 @@ public class  RecipeService {
     private final RecommendRecipeRepository recommendRecipeRepository;
     private final IngredientNameCache ingredientNameCache;
     private final IngredientParser ingredientParser;
+    private final OpenAiService openAiService;
     // 전체 레시피 조회
     public List<Recipe> getAllRecipes() {
         return recipeRepository.findAll();
@@ -109,9 +114,26 @@ public class  RecipeService {
         // 재료 JSON에서 재료명 파싱 → 캐시에 추가
         List<String> ingredientNames = ingredientParser.extractNames(recipeDTO.getIngredients());
         ingredientNameCache.addFromNames(ingredientNames);
-
         System.out.println("새 레시피 등록 시 캐시에 추가된 재료: " + ingredientNames);
+        //  썸네일 자동 생성 조건:
+        // - 메인이미지가 없고
+        // - 조리순서(cookingSteps)가 존재할 경우만 AI 썸네일 생성
+        if ((savedRecipe.getMainImageUrl() == null || savedRecipe.getMainImageUrl().isBlank())
+                && savedRecipe.getCookingSteps() != null
+                && !savedRecipe.getCookingSteps().trim().isEmpty()) {
 
+            try {
+                String prompt = buildPrompt(savedRecipe); // 새로 만들어줄 메서드
+                String imageUrl = openAiService.generateThumbnail(prompt);
+
+                savedRecipe.setMainImageUrl(imageUrl);
+                recipeRepository.save(savedRecipe); // 다시 저장
+
+                System.out.println("✅ AI 썸네일 생성 완료: " + imageUrl);
+            } catch (Exception e) {
+                System.out.println("⚠️ 썸네일 생성 실패: " + e.getMessage());
+            }
+        }
         return savedRecipe;
     }
 
@@ -362,6 +384,50 @@ public class  RecipeService {
                 reason
         );
     }
+    private String buildPrompt(Recipe recipe) {
+        StringBuilder prompt = new StringBuilder();
 
+        // 제목 + 카테고리 (예: 한식 요리인 비빔밥)
+        prompt.append(recipe.getCategory()).append(" 요리인 ").append(recipe.getTitle()).append("의 음식 사진입니다. ");
+
+        // 태그 추가 (예: 매콤, 건강식)
+        if (recipe.getTags() != null && !recipe.getTags().isBlank()) {
+            prompt.append("이 요리는 ").append(recipe.getTags()).append(" 느낌을 줍니다. ");
+        }
+
+        // 재료 (5개까지)
+        try {
+            Gson gson = new Gson();
+            Type type = new TypeToken<List<Map<String, String>>>(){}.getType();
+            List<Map<String, String>> ingredients = gson.fromJson(recipe.getIngredients(), type);
+            if (ingredients != null && !ingredients.isEmpty()) {
+                prompt.append("주요 재료는 ");
+                prompt.append(ingredients.stream()
+                        .limit(10)
+                        .map(ing -> ing.get("name"))
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.joining(", "))
+                ).append("입니다. ");
+            }
+        } catch (Exception ignored) {}
+
+        // 조리 과정 요약
+        try {
+            Gson gson = new Gson();
+            Type stepType = new TypeToken<List<Map<String, Object>>>(){}.getType();
+            List<Map<String, Object>> steps = gson.fromJson(recipe.getCookingSteps(), stepType);
+            if (steps != null && !steps.isEmpty()) {
+                prompt.append("조리 순서는 다음과 같습니다: ");
+                prompt.append(steps.stream()
+                        .map(step -> String.valueOf(step.get("description")))
+                        .collect(Collectors.joining(", "))
+                ).append(". ");
+            }
+        } catch (Exception ignored) {}
+        // 마무리 묘사
+        prompt.append("이 레시피의 썸네일에 사용할 하얀색 배경에 음식 사진을 생성해주세요.");
+
+        return prompt.toString();
+    }
 
 }

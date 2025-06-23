@@ -20,7 +20,6 @@ import java.util.List;
 public class VisionController {
 
     private final VisionAnalyzeService visionAnalyzeService;
-    private final UserRepository userRepository; // ✅ 추가
 
     @PostMapping("/analyze")
     public ResponseEntity<List<String>> analyzeImage(
@@ -30,14 +29,7 @@ public class VisionController {
         if (userDetails == null) {
             throw new IllegalArgumentException("인증되지 않은 사용자입니다.");
         }
-
-        // ✅ UserEntity로 변환
-        String username = userDetails.getUsername();
-        UserEntity user = userRepository.findByUsername(username);
-        System.out.println("🔥 받은 유저 정보: " + user.getUsername());
-
-        // ✅ 실제 분석 및 저장
-        List<String> savedIngredients = visionAnalyzeService.analyzeAndSave(image, user);
+        List<String> savedIngredients = visionAnalyzeService.analyzeOnly(image);
         return ResponseEntity.ok(savedIngredients);
     }
 }

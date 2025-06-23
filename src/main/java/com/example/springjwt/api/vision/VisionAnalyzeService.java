@@ -80,4 +80,35 @@ public class VisionAnalyzeService {
 
         return savedIngredients;
     }
+
+    public List<String> analyzeOnly(MultipartFile imageFile) {
+        List<String> detectedLabels = gcpVisionClient.detectLabels(imageFile);
+        System.out.println("📸 [VisionAnalyzeService] Vision 결과 라벨: " + detectedLabels);
+
+        // 전체 캐시된 재료명 가져오기
+        Set<String> allKorNames = ingredientNameCache.getAll(); // 예: [양파, 당근, 우유]
+
+        // 한글 → 영어 번역
+        Map<String, String> korToEng = googleTranslateService.translateBatch(new ArrayList<>(allKorNames));
+        Map<String, String> engToKor = korToEng.entrySet().stream()
+                .collect(Collectors.toMap(
+                        e -> e.getValue().toLowerCase(),
+                        Map.Entry::getKey,
+                        (existing, replacement) -> existing
+                ));
+
+        List<String> matchedIngredients = new ArrayList<>();
+
+        for (String label : detectedLabels) {
+            String labelLower = label.toLowerCase();
+            if (engToKor.containsKey(labelLower)) {
+                String korName = engToKor.get(labelLower);
+                matchedIngredients.add(korName);
+                System.out.println("🔍 [analyzeOnly] 감지된 재료명: " + korName);
+            }
+        }
+
+        return matchedIngredients;
+    }
+
 }

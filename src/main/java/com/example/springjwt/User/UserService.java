@@ -43,5 +43,17 @@ public class UserService {
         userRepository.save(user);
     }
 
+    public UserEntity findOrCreateGoogleUser(String email, String name) {
+        UserEntity user = userRepository.findByUsername(email);
+        if (user == null) {
+            user = new UserEntity();
+            user.setUsername(email);
+            user.setName(name);
+            user.setPassword("");
+            user.setRole("ROLE_USER");
+            user = userRepository.save(user);
+        }
+        return user;
+    }
 }
 

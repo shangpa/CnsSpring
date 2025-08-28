@@ -123,4 +123,15 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
 
     //레시피 검색 - 제철 음식 추천
     List<Recipe> findByTitleInAndIsPublicTrue(List<String> titles);
+
+    //레시피 탭 - 레시피 이거 어때요?
+    @Query(value = """
+        SELECT * 
+        FROM recipe r
+        WHERE r.isPublic = 1
+          AND CONCAT_WS(' ', r.title, r.tags) REGEXP :regex
+        ORDER BY RAND()
+        LIMIT :limit
+        """, nativeQuery = true)
+    List<Recipe> findRandomPublicByRegex(@Param("regex") String regex, @Param("limit") int limit);
 }

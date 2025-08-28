@@ -138,4 +138,14 @@ public class RecipeController {
         List<String> seasonalTitles = List.of("삼계탕", "초계국수", "콩국수", "물회", "오이냉국");
         return recipeService.findRecipesByTitlesContaining(seasonalTitles);
     }
+
+    //레시피 탭 - 레시피 이거 어때요?
+    @GetMapping("/suggest")
+    public ResponseEntity<List<RecipeSearchResponseDTO>> suggest(
+            @RequestParam String type
+    ) {
+        // type: lateNightMeal | rainsDay | cool | heat | vegan | superSimple
+        List<RecipeSearchResponseDTO> list = recipeService.suggestByType(type);
+        return ResponseEntity.ok(list);
+    }
 }

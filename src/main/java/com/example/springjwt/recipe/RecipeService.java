@@ -48,6 +48,8 @@ public class  RecipeService {
     private final IngredientNameCache ingredientNameCache;
     private final IngredientParser ingredientParser;
     private final OpenAiService openAiService;
+    private static final int SUGGEST_LIMIT = 3;
+
     // 전체 레시피 조회
     public List<Recipe> getAllRecipes() {
         return recipeRepository.findAll();
@@ -430,4 +432,42 @@ public class  RecipeService {
         return prompt.toString();
     }
 
+    //레시피 탭 - 레시피 이거 어때요?
+    @Transactional(readOnly = true)
+    public List<RecipeSearchResponseDTO> suggestByType(String type) {
+        String regex = switch (type) {
+            // 조건 1: 야식
+            case "lateNightMeal" -> "(곱창|닭|치킨|닭발|피자|라면|떡볶이)";
+            // 조건 2: 비오는날
+            case "rainsDay"      -> "(수제비|칼국수|감자탕|전)";
+            // 조건 3: 시원한
+            case "cool"          -> "(초계국수|열무국수|냉면|비빔냉면|모밀)";
+            // 조건 4: 이열치열
+            case "heat"          -> "(삼계탕|닭죽|전골)";
+            // 조건 5: 비건
+            case "vegan"         -> "(비건|채식)";
+            // 조건 6: 초간단
+            case "superSimple"   -> "(계란찜|볶음밥|비빔밥|미역국)";
+            default -> throw new IllegalArgumentException("invalid type: " + type);
+        };
+
+        // 현재 로그인(없으면 익명 허용)
+        String username = Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
+                .map(a -> a.getName())
+                .filter(n -> !"anonymousUser".equalsIgnoreCase(n))
+                .orElse(null);
+        UserEntity currentUser = (username != null) ? userRepository.findByUsername(username) : null;
+
+        List<Recipe> pick = recipeRepository.findRandomPublicByRegex(regex, SUGGEST_LIMIT);
+
+        return pick.stream().map(recipe -> {
+            Double avgRatingWrapper = reviewRepository.findAvgRatingByRecipe(recipe.getRecipeId());
+            double avgRating = (avgRatingWrapper != null) ? avgRatingWrapper : 0.0;
+            int reviewCount = reviewRepository.countByRecipe(recipe);
+            boolean liked = (currentUser != null) && likeRecipeRepository.existsByUserAndRecipe(currentUser, recipe);
+
+            // 목록 카드용 가벼운 DTO를 쓰고 싶으면 fromEntity 쪽에서 큰 텍스트 null 처리
+            return RecipeSearchResponseDTO.fromEntity(recipe, avgRating, reviewCount, liked);
+        }).toList();
+    }
 }

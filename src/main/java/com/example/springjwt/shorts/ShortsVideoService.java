@@ -63,6 +63,12 @@ public class ShortsVideoService {
         return shortsVideoRepository.findTop10ByIsPublicTrueOrderByViewCountDesc();
     }
 
+    //랜덤조회
+    public List<ShortsListDto> getRandomSimple(int size) {
+        int limit = Math.max(1, size);
+        return shortsVideoRepository.findRandomSimple(limit).stream().map(ShortsListDto::from).toList();
+    }
+
     // 조회수 증가
     public void increaseViewCount(Long shortsId) {
         ShortsVideo shorts = shortsVideoRepository.findById(shortsId)
@@ -70,4 +76,21 @@ public class ShortsVideoService {
         shorts.setViewCount(shorts.getViewCount() + 1);
         shortsVideoRepository.save(shorts);
     }
+
+    //랜덤시드
+    public List<ShortsListDto> getRandomBySeed(String seed, int page, int size) {
+        int limit  = Math.max(1, size);          // size 0 방지
+        int offset = Math.max(0, page) * limit;  // page 0 → 0, page 1 → limit
+
+        String s = (seed == null || seed.isBlank()) ? "default" : seed;
+
+        var rows = shortsVideoRepository.findRandomBySeedPositional(s, offset, limit);
+
+        System.out.println("[randomBySeed] seed=" + s +
+                ", page=" + page + ", size=" + size +
+                ", offset=" + offset + ", fetched=" + rows.size());
+
+        return rows.stream().map(ShortsListDto::from).toList();
+    }
+
 }

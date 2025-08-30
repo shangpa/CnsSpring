@@ -21,7 +21,7 @@ public class ShortsVideoController {
 
     private final ShortsVideoService shortsVideoService;
     private final ShortsVideoRepository shortsVideoRepository;
-    // 파일만 업로드
+   /* // 파일만 업로드
     @PostMapping("/upload-file")
     public ResponseEntity<String> uploadShortsFileOnly(
             @RequestParam("video") MultipartFile video,
@@ -44,7 +44,7 @@ public class ShortsVideoController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("업로드 실패: " + e.getMessage());
         }
-    }
+    }*/
 
     // 최종 등록
     @PostMapping("/register")
@@ -52,6 +52,7 @@ public class ShortsVideoController {
             @RequestBody RecipeShortCreateRequest request,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
+        System.out.println("🔎 받은 isPublic 값: " + request.isPublic());
         try {
             UserEntity user = userDetails.getUserEntity();
             ShortsVideo shortsVideo = ShortsVideo.builder()
@@ -86,5 +87,28 @@ public class ShortsVideoController {
     public ResponseEntity<Void> increaseView(@PathVariable Long id) {
         shortsVideoService.increaseViewCount(id);
         return ResponseEntity.ok().build();
+    }
+    /*
+    랜덤재생
+    @GetMapping("/random")
+    public ResponseEntity<List<ShortsListDto>> randomSimple(
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok(shortsVideoService.getRandomSimple(size));
+    }*/
+
+
+    //랜덤시드 재생
+    @GetMapping("/random")
+    public ResponseEntity<List<ShortsListDto>> randomBySeed(
+            @RequestParam String seed,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        UserEntity user = userDetails.getUserEntity(); // 필요 시 현재 로그인 유저 확인 가능
+        var list = shortsVideoService.getRandomBySeed(seed, page, size);
+        System.out.println("[/api/shorts/random] return size=" + list.size());
+        return ResponseEntity.ok(shortsVideoService.getRandomBySeed(seed, page, size));
     }
 }

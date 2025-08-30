@@ -23,10 +23,11 @@ public class ShortsVideo {
     private String videoUrl;     // 업로드된 영상 경로
     private String thumbnailUrl; // 썸네일 (선택)
 
-    private boolean isPublic;    // 공개 여부
+    @Column(name = "is_public", nullable = false)   // ✅ 명시
+    private boolean isPublic = true;
 
     private int viewCount = 0;   // 조회수
-    private int likes = 0;       // 좋아요 수
+    private int likeCount = 0;       // 좋아요 수
 
     private LocalDateTime createdAt;
 

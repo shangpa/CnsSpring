@@ -8,7 +8,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import java.io.File;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -110,5 +112,30 @@ public class ShortsVideoController {
         var list = shortsVideoService.getRandomBySeed(seed, page, size);
         System.out.println("[/api/shorts/random] return size=" + list.size());
         return ResponseEntity.ok(shortsVideoService.getRandomBySeed(seed, page, size));
+    }
+
+    //유저별정렬
+    @GetMapping("/{userId}")
+    public ResponseEntity<ShortsUserVideoListResponse> getUserShorts(
+            @PathVariable int userId,
+            @RequestParam(defaultValue = "latest") String sort,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "30") int size
+    ) {
+        // 정렬 키 매핑
+        Sort sortObj = switch (sort) {
+            case "views" -> Sort.by(Sort.Direction.DESC, "viewCount");
+            case "date"  -> Sort.by(Sort.Direction.ASC,  "createdAt");   // 오래된→최신
+            default      -> Sort.by(Sort.Direction.DESC, "createdAt");   // latest: 최신→오래된
+        };
+
+        Pageable pageable = PageRequest.of(Math.max(0, page), Math.max(1, size), sortObj);
+        var pageResult = shortsVideoRepository.findByUser_IdAndIsPublicTrue(userId, pageable);
+
+        var list = pageResult.getContent().stream()
+                .map(ShortsUserVideoDto::from)
+                .toList();
+
+        return ResponseEntity.ok(new ShortsUserVideoListResponse(list));
     }
 }

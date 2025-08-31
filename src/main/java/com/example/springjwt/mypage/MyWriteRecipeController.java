@@ -37,30 +37,46 @@ public class MyWriteRecipeController {
     public ResponseEntity<MyWriteRecipeResponseDTO> getMyRecipes(
             @RequestHeader("Authorization") String token,
             @RequestParam String sort,
-            @RequestParam(required = false) List<String> categories
+            @RequestParam(required = false) List<String> categories,
+            @RequestParam(required = false) Long userId   // ✅ 추가
     ) {
+        // 기존 로직 그대로
         String username = jwtUtil.getUsername(token);
-        UserEntity user = userRepository.findByUsername(username);
-        if (user == null) {
+        UserEntity me = userRepository.findByUsername(username);
+        if (me == null) {
             return ResponseEntity.badRequest().build();
         }
 
+        // ✅ 타겟 유저 결정: 파라미터 없으면 나(me), 있으면 해당 userId
+        UserEntity target = (userId == null)
+                ? me
+                : userRepository.findById(Math.toIntExact(userId)).orElse(null);
+        if (target == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        // 기존 카테고리/재료 분리 로직 유지
         List<String> categoryFilters = new ArrayList<>();
         List<String> ingredientFilters = new ArrayList<>();
-
         if (categories != null) {
             for (String filter : categories) {
                 String enumVal = convertToEnumFormat(filter);
-                if (enumVal != null) {
-                    categoryFilters.add(enumVal);
-                } else {
-                    ingredientFilters.add(filter);
-                }
+                if (enumVal != null) categoryFilters.add(enumVal);
+                else ingredientFilters.add(filter);
             }
         }
 
-        List<MyWriteRecipeDTO> dtoList = myWriteRecipeService.getMyRecipes(user.getId(), sort, categoryFilters, ingredientFilters);
+        // ✅ 서비스는 그대로 사용하되, 대상 유저 id만 타겟으로 교체
+        List<MyWriteRecipeDTO> dtoList =
+                myWriteRecipeService.getMyRecipes(target.getId(), sort, categoryFilters, ingredientFilters);
+
         return ResponseEntity.ok(new MyWriteRecipeResponseDTO(dtoList.size(), dtoList));
+    }
+
+    private String extractBearerToken(String authHeader) {
+        if (authHeader == null) return null;
+        // "Bearer xxx" or "Bearerxxx" 둘 다 방어
+        return authHeader.replaceFirst("(?i)^Bearer\\s+", "");
     }
 
     // ✅ 여기 아래에 추가해줘

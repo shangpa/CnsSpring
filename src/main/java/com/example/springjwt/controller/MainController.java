@@ -39,8 +39,9 @@ public class MainController {
         UserEntity userEntity = userRepository.findByUsername(userName);  // UserRepository를 통해 DB에서 사용자 정보 가져오기
         String name = userEntity.getName();  // name을 가져옵니다.
 
+        Long id = (long) userEntity.getId();
         // LoginInfoResponse로 반환
-        return new LoginInfoResponse(userName, name);
+        return new LoginInfoResponse(id, userName, name);
     }
 
 

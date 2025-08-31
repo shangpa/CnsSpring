@@ -9,7 +9,7 @@ import java.util.List;
 public interface ShortsVideoRepository extends JpaRepository<ShortsVideo, Long> {
     List<ShortsVideo> findTop10ByIsPublicTrueOrderByCreatedAtDesc(); // 최신순
     List<ShortsVideo> findTop10ByIsPublicTrueOrderByViewCountDesc(); // 인기순
-
+    int countByUser_Id(int userId);
 
     @Query(value = "SELECT * FROM shorts_video WHERE is_public = true ORDER BY RAND() LIMIT :limit", nativeQuery = true)
     List<ShortsVideo> findRandomSimple(@Param("limit") int limit);

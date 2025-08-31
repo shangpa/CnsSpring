@@ -46,11 +46,17 @@ public class UserController {
     record UserLocationResponse(Double latitude, Double longitude) {}
 
     // 마이페이지 사용자 이름 출력
+    // 마이페이지 사용자 이름 출력
     @GetMapping("/profile")
     public ResponseEntity<LoginInfoResponse> getUserInfo(@AuthenticationPrincipal CustomUserDetails userDetails) {
         UserEntity user = userDetails.getUserEntity();
-        return ResponseEntity.ok(new LoginInfoResponse(user.getUsername(), user.getName()));
+        return ResponseEntity.ok(new LoginInfoResponse(
+                (long) user.getId(),
+                user.getUsername(),
+                user.getName()
+        ));
     }
+
 
     // 마이페이지 개인정보수정
     @PutMapping("/update")

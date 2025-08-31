@@ -8,10 +8,12 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor  // 기본 생성자 추가
 public class LoginInfoResponse {
+    private Long id;
     private String userName;
     private String name;
 
-    public LoginInfoResponse(String userName, String name) {
+    public LoginInfoResponse(Long id, String userName, String name) {
+        this.id = id;
         this.userName = userName;
         this.name = name;
     }

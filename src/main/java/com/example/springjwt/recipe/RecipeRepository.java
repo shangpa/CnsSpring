@@ -73,7 +73,7 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
     List<Object[]> sumRecipeViewsMonthlyRaw(@Param("startDate") LocalDateTime startDate);
 
     int countByUser(UserEntity user);
-
+    int countByUser_Id(int targetUserId);
     @Query("SELECT new com.example.springjwt.admin.dto.UserRecipeSimpleDTO(r.recipeId, u.username, r.title, r.createdAt) " +
             "FROM Recipe r JOIN r.user u WHERE u.id = :userId")
     Page<UserRecipeSimpleDTO> findRecipesByUserId(@Param("userId") int userId, Pageable pageable);

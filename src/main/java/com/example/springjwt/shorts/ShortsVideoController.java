@@ -138,4 +138,10 @@ public class ShortsVideoController {
 
         return ResponseEntity.ok(new ShortsUserVideoListResponse(list));
     }
+
+    // 랜덤 3개(레시피 탭)
+    @GetMapping("/random3")
+    public ResponseEntity<List<ShortsCardDto>> random3() {
+        return ResponseEntity.ok(shortsVideoService.getRandom3Cards());
+    }
 }

@@ -93,4 +93,10 @@ public class ShortsVideoService {
         return rows.stream().map(ShortsListDto::from).toList();
     }
 
+    //랜덤3개(레시피 탭)
+    public List<ShortsCardDto> getRandom3Cards() {
+        // 공개 숏츠 중 무작위 3개
+        return shortsVideoRepository.findRandomSimple(3)
+                .stream().map(ShortsCardDto::from).toList();
+    }
 }

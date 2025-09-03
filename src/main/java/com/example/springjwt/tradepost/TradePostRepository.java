@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TradePostRepository extends JpaRepository<TradePost, Long> {
@@ -127,5 +128,11 @@ public interface TradePostRepository extends JpaRepository<TradePost, Long> {
             Pageable pageable
     );
 
+    // 소유자까지 fetch해서 소유권 검증 최적화
+    @Query("SELECT t FROM TradePost t JOIN FETCH t.user u WHERE t.tradePostId = :postId")
+    Optional<TradePost> findWithOwner(@Param("postId") Long postId);
 
+    // 최신 노출순(UP 반영) 목록
+    @Query("SELECT t FROM TradePost t ORDER BY t.updatedAt DESC")
+    List<TradePost> findAllByOrderByUpdatedAtDesc();
 }

@@ -13,7 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-
+import com.example.springjwt.tradepost.up.TradePostUpService;
+import com.example.springjwt.tradepost.up.TradePostUpResult;
 import java.util.List;
 
 @RestController
@@ -26,6 +27,8 @@ public class TradePostController {
     private final TradeCompleteRequestService tradeCompleteRequestService;
     private final TradeCompleteRequestRepository tradeCompleteRequestRepository;
     private final UserRepository userRepository;
+    private final TradePostUpService tradePostUpService;
+
     // 거래글 생성
     @PostMapping
     public ResponseEntity<TradePostDTO> createTradePost(@RequestBody TradePostDTO dto,
@@ -184,4 +187,13 @@ public class TradePostController {
         return ResponseEntity.ok(tradePostService.getUserProfile(user));
     }
 
+    // 끌어올리기
+    @PostMapping("/{id}/up")
+    public ResponseEntity<TradePostUpResult> up(
+            @PathVariable Long id,
+            @AuthenticationPrincipal com.example.springjwt.dto.CustomUserDetails userDetails
+    ) {
+        var result = tradePostUpService.up(id, userDetails.getUserEntity());
+        return ResponseEntity.ok(result);
+    }
 }

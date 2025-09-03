@@ -60,6 +60,12 @@ public class TradePost {
     @Column(name = "view_count", nullable = false)
     private int viewCount = 0;
 
+    @Column(name = "updatedAt")
+    private java.time.LocalDateTime updatedAt;
+
+    @Column(name = "lastUppedAt")
+    private java.time.LocalDateTime lastUppedAt;
+
     public String extractFirstImageUrl() {
         if (this.imageUrls == null || this.imageUrls.isEmpty()) {
             return null; // 이미지가 없으면 null 반환
@@ -85,8 +91,22 @@ public class TradePost {
     @Column(name = "createdAt", nullable = false, updatable = false)
     private java.time.LocalDateTime createdAt;
 
+    @Version
+    private Long version;
+
     @PrePersist
     protected void onCreate() {
-        this.createdAt = java.time.LocalDateTime.now();
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        this.createdAt = now;
+        if (this.updatedAt == null) this.updatedAt = now; // ✅ 최초값
+    }
+
+    public boolean isUpProhibited() {
+        return this.status == STATUS_COMPLETED; // 거래완료면 업 불가
+    }
+
+    public void markUpped(java.time.LocalDateTime now) {
+        this.updatedAt = now;
+        this.lastUppedAt = now;
     }
 }

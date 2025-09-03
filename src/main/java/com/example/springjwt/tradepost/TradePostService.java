@@ -133,7 +133,7 @@ public class TradePostService {
 
         // 위치 정보가 없거나 비로그인한 경우 전체 최신순 정렬
         if (user == null || user.getLatitude() == null || user.getLongitude() == null) {
-            return tradePostRepository.findAllByOrderByCreatedAtDesc().stream()
+            return tradePostRepository.findAllByOrderByUpdatedAtDesc().stream()
                     .map(TradePostDTO::fromEntity)
                     .collect(Collectors.toList());
         }
@@ -155,7 +155,7 @@ public class TradePostService {
     public List<TradePostDTO> getTradePostsSortedByDistance(String username) {
         UserEntity user = userRepository.findByUsername(username);
         if (user == null || user.getLatitude() == null || user.getLongitude() == null) {
-            return tradePostRepository.findAllByOrderByCreatedAtDesc().stream()
+            return tradePostRepository.findAllByOrderByUpdatedAtDesc().stream()
                     .map(TradePostDTO::fromEntity)
                     .collect(Collectors.toList());
         }
@@ -179,7 +179,7 @@ public class TradePostService {
     public List<TradePostDTO> getNearbyByCategory(String username, double distanceKm, String category) {
         UserEntity user = userRepository.findByUsername(username);
         if (user == null || user.getLatitude() == null || user.getLongitude() == null) {
-            return tradePostRepository.findAllByOrderByCreatedAtDesc().stream()
+            return tradePostRepository.findAllByOrderByUpdatedAtDesc().stream()
                     .map(TradePostDTO::fromEntity)
                     .collect(Collectors.toList());
         }
@@ -215,7 +215,7 @@ public class TradePostService {
     public List<TradePostDTO> getNearbyPostsByMultipleCategories(UserEntity user, double distanceKm, List<String> categories) {
         if (user == null || user.getLatitude() == null || user.getLongitude() == null) {
             // 위치 정보 없으면 전체 최신순 + 카테고리 필터만 적용
-            return tradePostRepository.findAllByOrderByCreatedAtDesc().stream()
+            return tradePostRepository.findAllByOrderByUpdatedAtDesc().stream()
                     .filter(post -> categories.contains(post.getCategory()))
                     .map(TradePostDTO::fromEntity)
                     .collect(Collectors.toList());
@@ -318,7 +318,7 @@ public class TradePostService {
 
     public Page<TradePostListResponseDTO> getTradePosts(int page, int size, Integer status, String sortBy, String keyword) {
         if (sortBy == null || sortBy.isEmpty()) {
-            sortBy = "createdAt";
+            sortBy = "updatedAt";
         }
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortBy));

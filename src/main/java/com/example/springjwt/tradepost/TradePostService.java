@@ -7,29 +7,24 @@ import com.example.springjwt.admin.dto.TradePostDetailResponseDTO;
 import com.example.springjwt.admin.dto.TradePostListResponseDTO;
 import com.example.springjwt.admin.log.AdminLogService;
 import com.example.springjwt.chat.ChatMessageRepository;
-import com.example.springjwt.chat.ChatMessageService;
 import com.example.springjwt.chat.ChatRoom;
 import com.example.springjwt.chat.ChatRoomRepository;
 import com.example.springjwt.point.PointActionType;
 import com.example.springjwt.point.PointService;
 import com.example.springjwt.review.TradePost.TpReviewRepository;
 import com.example.springjwt.tradepost.saved.SavedTradePostRepository;
+import com.example.springjwt.util.DistanceUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
-import com.example.springjwt.util.DistanceUtil;
 
 import java.time.LocalDateTime;
-import java.util.AbstractMap;
-import java.util.List;
+import java.util.*;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.stream.Collectors;
-import java.util.Comparator;
 
 @Service
 @RequiredArgsConstructor
@@ -44,6 +39,8 @@ public class TradePostService {
     private final TpReviewRepository tpReviewRepository;
     private final PointService pointService;
 
+    /* --------------------------- 생성/조회 기본 --------------------------- */
+
     public TradePost create(TradePostDTO dto, String username) {
         UserEntity user = userRepository.findByUsername(username);
         if (user == null) {
@@ -51,9 +48,9 @@ public class TradePostService {
         }
         TradePost tradePost = dto.toEntity();
         tradePost.setUser(user);
-        tradePost.setStatus(0);
+        tradePost.setStatus(TradePost.STATUS_ONGOING);
 
-        // location에서 위도, 경도 분리하여 저장
+        // location: "lat,lng" 문자열에서 위경도 추출 (선택)
         String location = dto.getLocation();
         if (location != null && location.contains(",")) {
             try {
@@ -66,7 +63,6 @@ public class TradePostService {
                 throw new IllegalArgumentException("위치 형식이 잘못되었습니다: " + location);
             }
         }
-
         return tradePostRepository.save(tradePost);
     }
 
@@ -85,15 +81,7 @@ public class TradePostService {
                 return TradePostDTO.fromEntityWithDistance(tradePost, distance);
             }
         }
-
         return TradePostDTO.fromEntity(tradePost);
-    }
-
-    public TradePost completeTradePost(Long id) {
-        TradePost tradePost = tradePostRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("해당 거래글이 존재하지 않습니다. ID=" + id));
-        tradePost.setStatus(TradePost.STATUS_COMPLETED);
-        return tradePostRepository.save(tradePost);
     }
 
     public List<TradePostSimpleResponseDTO> getMyTradePosts(String username) {
@@ -127,119 +115,84 @@ public class TradePostService {
                 .collect(Collectors.toList());
     }
 
-    // 위치 기반 거래글 조회 기능
-    public List<TradePostDTO> getNearbyTradePosts(String username, double distanceKm) {
-        UserEntity user = userRepository.findByUsername(username);
+    /* --------------------------- 통합 필터/정렬 --------------------------- */
 
-        // 위치 정보가 없거나 비로그인한 경우 전체 최신순 정렬
-        if (user == null || user.getLatitude() == null || user.getLongitude() == null) {
-            return tradePostRepository.findAllByOrderByUpdatedAtDesc().stream()
-                    .map(TradePostDTO::fromEntity)
-                    .collect(Collectors.toList());
+    /**
+     * 통합 필터/정렬 메서드
+     * @param username   사용자명(거리 필터/거리 정렬 시 위치 추출에 사용)
+     * @param distanceKm 거리(km) - null이면 적용 안 함
+     * @param categories 카테고리 목록 - null/빈이면 적용 안 함
+     * @param sort       정렬: LATEST(기본), UPDATED, DISTANCE, PRICE, PURCHASE_DATE
+     */
+    public List<TradePostDTO> getNearbyFlexible(
+            String username, Double distanceKm, List<String> categories, String sort
+    ) {
+        UserEntity user = (username != null) ? userRepository.findByUsername(username) : null;
+        Double lat = (user != null) ? user.getLatitude() : null;
+        Double lng = (user != null) ? user.getLongitude() : null;
+
+        // 위치 없으면 거리필터 무시
+        if ((lat == null || lng == null) && distanceKm != null) distanceKm = null;
+
+        boolean categoriesEmpty = (categories == null || categories.isEmpty());
+        List<String> catsParam = categoriesEmpty ? List.of("_ALL_") : categories;
+
+        List<TradePost> posts = tradePostRepository.findNearbyFlexible(
+                lat, lng, distanceKm, catsParam, categoriesEmpty, TradePost.STATUS_ONGOING /* 진행중만; 전체면 null */
+        );
+
+        class P { TradePost p; Double d; P(TradePost p, Double d){ this.p=p; this.d=d; } }
+        List<P> withDist = posts.stream().map(p -> {
+            Double d = (lat != null && lng != null && p.getLatitude()!=null && p.getLongitude()!=null)
+                    ? DistanceUtil.calculateDistance(lat, lng, p.getLatitude(), p.getLongitude()) : null;
+            return new P(p, d);
+        }).toList();
+
+        Comparator<P> cmp;
+        if ("DISTANCE".equalsIgnoreCase(sort)) {
+            cmp = Comparator.comparing(x -> x.d == null ? Double.MAX_VALUE : x.d);
+        } else if ("PRICE".equalsIgnoreCase(sort)) {
+            cmp = Comparator.comparingInt(x -> x.p.getPrice());
+        } else if ("PURCHASE_DATE".equalsIgnoreCase(sort)) {
+            cmp = Comparator.comparing((P x) -> x.p.getPurchaseDate(),
+                    Comparator.nullsLast(Comparator.naturalOrder())).reversed();
+        } else if ("UPDATED".equalsIgnoreCase(sort)) {
+            cmp = Comparator.comparing((P x) -> x.p.getUpdatedAt(),
+                    Comparator.nullsLast(Comparator.naturalOrder())).reversed();
+        } else {
+            cmp = Comparator.comparing((P x) -> x.p.getCreatedAt(),
+                    Comparator.nullsLast(Comparator.naturalOrder())).reversed();
         }
+        List<P> sorted = new java.util.ArrayList<>(withDist);
+        sorted.sort(cmp);
 
-        double userLat = user.getLatitude();
-        double userLon = user.getLongitude();
-
-        return tradePostRepository.findAll().stream()
-                .filter(post -> post.getLatitude() != null && post.getLongitude() != null)
-                .map(post -> {
-                    double distance = calculateDistance(userLat, userLon, post.getLatitude(), post.getLongitude());
-                    return new AbstractMap.SimpleEntry<>(post, distance);
-                })
-                .filter(entry -> entry.getValue() <= distanceKm)
-                .map(entry -> TradePostDTO.fromEntityWithDistance(entry.getKey(), entry.getValue()))
-                .collect(Collectors.toList());
+        return sorted.stream()
+                .map(x -> x.d != null ? TradePostDTO.fromEntityWithDistance(x.p, x.d) : TradePostDTO.fromEntity(x.p))
+                .toList();
     }
 
-    public List<TradePostDTO> getTradePostsSortedByDistance(String username) {
-        UserEntity user = userRepository.findByUsername(username);
-        if (user == null || user.getLatitude() == null || user.getLongitude() == null) {
-            return tradePostRepository.findAllByOrderByUpdatedAtDesc().stream()
-                    .map(TradePostDTO::fromEntity)
-                    .collect(Collectors.toList());
-        }
 
-        double userLat = user.getLatitude();
-        double userLon = user.getLongitude();
+    /* --------------------------- 위임(레거시 시그니처 대응) --------------------------- */
 
-        List<TradePost> allPosts = tradePostRepository.findAll().stream()
-                .filter(post -> post.getLatitude() != null && post.getLongitude() != null)
-                .sorted(Comparator.comparingDouble(post ->
-                        DistanceUtil.calculateDistance(userLat, userLon, post.getLatitude(), post.getLongitude())
-                ))
-                .collect(Collectors.toList());
-
-        return allPosts.stream()
-                .map(TradePostDTO::fromEntity)
-                .collect(Collectors.toList());
+    // (선택) 여전히 호출되는 곳이 있으면 위임만 남겨둬도 됨
+    public List<TradePostDTO> getNearbyTradePosts(String username, Double distanceKm) {
+        return getNearbyFlexible(username, distanceKm, null, "LATEST");
     }
 
-    //카테고리 + 거리순 필터링
     public List<TradePostDTO> getNearbyByCategory(String username, double distanceKm, String category) {
-        UserEntity user = userRepository.findByUsername(username);
-        if (user == null || user.getLatitude() == null || user.getLongitude() == null) {
-            return tradePostRepository.findAllByOrderByUpdatedAtDesc().stream()
-                    .map(TradePostDTO::fromEntity)
-                    .collect(Collectors.toList());
-        }
-
-        double userLat = user.getLatitude();
-        double userLon = user.getLongitude();
-
-        return tradePostRepository.findAll().stream()
-                .filter(post ->
-                        post.getCategory().equals(category) &&
-                                post.getLatitude() != null && post.getLongitude() != null
-                )
-                .map(post -> {
-                    double distance = calculateDistance(userLat, userLon, post.getLatitude(), post.getLongitude());
-                    return new AbstractMap.SimpleEntry<>(post, distance);
-                })
-                .filter(entry -> entry.getValue() <= distanceKm)
-                .map(entry -> TradePostDTO.fromEntityWithDistance(entry.getKey(), entry.getValue()))
-                .collect(Collectors.toList());
-    }
-
-    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-        double R = 6371; // 지구 반지름 (km)
-        double dLat = Math.toRadians(lat2 - lat1);
-        double dLon = Math.toRadians(lon2 - lon1);
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
-                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
+        return getNearbyFlexible(username, distanceKm, Collections.singletonList(category), "LATEST");
     }
 
     public List<TradePostDTO> getNearbyPostsByMultipleCategories(UserEntity user, double distanceKm, List<String> categories) {
-        if (user == null || user.getLatitude() == null || user.getLongitude() == null) {
-            // 위치 정보 없으면 전체 최신순 + 카테고리 필터만 적용
-            return tradePostRepository.findAllByOrderByUpdatedAtDesc().stream()
-                    .filter(post -> categories.contains(post.getCategory()))
-                    .map(TradePostDTO::fromEntity)
-                    .collect(Collectors.toList());
-        }
-
-        double userLat = user.getLatitude();
-        double userLng = user.getLongitude();
-
-        List<TradePost> posts = tradePostRepository.findAll().stream()
-                .filter(post -> post.getLatitude() != null && post.getLongitude() != null)
-                .filter(post -> DistanceUtil.calculateDistance(userLat, userLng, post.getLatitude(), post.getLongitude()) <= distanceKm)
-                .filter(post -> categories.contains(post.getCategory()))
-                .collect(Collectors.toList());
-
-        return posts.stream()
-                .map(post -> TradePostDTO.fromEntityWithDistance(post,
-                        DistanceUtil.calculateDistance(userLat, userLng, post.getLatitude(), post.getLongitude())))
-                .collect(Collectors.toList());
+        String username = (user != null) ? user.getUsername() : null;
+        return getNearbyFlexible(username, distanceKm, categories, "LATEST");
     }
+
+    /* --------------------------- 인기/조회수/완료 처리 --------------------------- */
 
     public List<TradePostSimpleResponseDTO> getTop3PopularTradePosts() {
         Pageable pageable = PageRequest.of(0, 3);
         List<TradePost> topPosts = tradePostRepository.findTop3ByOrderByViewCountDesc(pageable);
-
         return topPosts.stream()
                 .map(TradePostSimpleResponseDTO::fromEntity)
                 .collect(Collectors.toList());
@@ -267,20 +220,18 @@ public class TradePostService {
         UserEntity seller = post.getUser();
         int price = post.getPrice();
 
-        // 1. 포인트 차감 (구매자)
+        // 1) 구매자 포인트 차감
         pointService.usePoint(buyer, price, "거래 지출 - " + post.getTitle());
-
-        // 🟢 판매자 포인트 적립
+        // 2) 판매자 포인트 적립
         pointService.addPoint(seller, PointActionType.TRADE_COMPLETE, price, "거래 수익 - " + post.getTitle());
 
-        // 3. 거래 상태 변경
+        // 3) 상태 변경 / 4) 구매자 기록
         post.setStatus(TradePost.STATUS_COMPLETED);
-
-        // 4. 구매자 정보 저장 (필드가 있다면)
-        post.setBuyer(buyer); // TradePost에 buyer 필드 필요
+        post.setBuyer(buyer);
 
         return tradePostRepository.save(post);
     }
+
     public List<TradePostSimpleResponseDTO> getMyPurchasedPosts(String username) {
         UserEntity user = userRepository.findByUsername(username);
         List<TradePost> posts = tradePostRepository.findByBuyerAndStatus(user, TradePost.STATUS_COMPLETED);
@@ -289,13 +240,14 @@ public class TradePostService {
                 .collect(Collectors.toList());
     }
 
-    //특정 유저 포스트 가져오기
+    /* --------------------------- 사용자별/집계/관리자 --------------------------- */
+
     public List<TradePostSimpleResponseDTO> getPostsByUsername(String username) {
         return tradePostRepository.findByUser_Username(username).stream()
                 .map(TradePostSimpleResponseDTO::fromEntity)
                 .collect(Collectors.toList());
     }
-    //특정 유저 포스트(상태) 가져오기
+
     public List<TradePostSimpleResponseDTO> getPostsByUsernameAndStatus(String username, int status) {
         return tradePostRepository.findByUser_UsernameAndStatus(username, status).stream()
                 .map(TradePostSimpleResponseDTO::fromEntity)
@@ -317,13 +269,10 @@ public class TradePostService {
     }
 
     public Page<TradePostListResponseDTO> getTradePosts(int page, int size, Integer status, String sortBy, String keyword) {
-        if (sortBy == null || sortBy.isEmpty()) {
-            sortBy = "updatedAt";
-        }
-
+        if (sortBy == null || sortBy.isEmpty()) sortBy = "updatedAt";
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortBy));
-        Page<TradePost> tradePosts;
 
+        Page<TradePost> tradePosts;
         if (keyword != null && !keyword.isBlank()) {
             tradePosts = tradePostRepository.findByStatusAndTitleKeyword(status, keyword, pageable);
         } else if (status == null) {
@@ -342,8 +291,6 @@ public class TradePostService {
         ));
     }
 
-
-
     public TradePostDetailResponseDTO getTradePostDetail(Long postId) {
         TradePost tradePost = tradePostRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 거래글이 존재하지 않습니다."));
@@ -354,7 +301,7 @@ public class TradePostService {
         try {
             imageUrls = objectMapper.readValue(tradePost.getImageUrls(), new TypeReference<List<String>>() {});
         } catch (Exception e) {
-            imageUrls = List.of();
+            imageUrls = Collections.emptyList();
         }
 
         int chatCount = chatRoomRepository.countByTradePostId(postId);
@@ -373,30 +320,30 @@ public class TradePostService {
         );
     }
 
-
+    @Transactional
     public void deletePostByAdmin(Long postId, String adminUsername, String reason) {
         TradePost post = tradePostRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("거래글이 존재하지 않습니다."));
 
-        // 1. 연관 채팅 메시지 먼저 삭제
+        // 1) 연관 채팅 메시지 삭제
         List<ChatRoom> chatRooms = chatRoomRepository.findAllByPost(post);
         for (ChatRoom room : chatRooms) {
             chatMessageRepository.deleteAllByRoomKey(room.getRoomKey());
         }
 
-        // 2. 채팅방 삭제
+        // 2) 채팅방 삭제
         chatRoomRepository.deleteAll(chatRooms);
 
-        // 3. 찜 삭제
+        // 3) 찜 삭제
         savedTradePostRepository.deleteAllByTradePost(post);
 
-        // 4. 리뷰 삭제
+        // 4) 리뷰 삭제
         tpReviewRepository.deleteAllByTradePost(post);
 
-        // 5. 거래글 삭제
+        // 5) 거래글 삭제
         tradePostRepository.delete(post);
 
-        // 6. 관리자 로그 기록
+        // 6) 관리자 로그
         adminLogService.logAdminAction(
                 adminUsername,
                 "DELETE_POST",
@@ -405,25 +352,18 @@ public class TradePostService {
                 reason
         );
     }
-    public UserProfileResponseDTO getUserProfile(UserEntity user) {
-        System.out.println("🔥 조회된 유저: " + user.getUsername()); // null 아닌지 확인
 
+    public UserProfileResponseDTO getUserProfile(UserEntity user) {
         int reviewCount = tpReviewRepository.countByUser(user);
         Double avgRating = tpReviewRepository.avgRatingByUser((long) user.getId());
         double rating = (avgRating != null) ? Math.round(avgRating * 10) / 10.0 : 0.0;
         int transactionCount = tradePostRepository.countByUser(user);
 
-        UserProfileResponseDTO dto = new UserProfileResponseDTO(
+        return new UserProfileResponseDTO(
                 user.getUsername(),
                 rating,
                 reviewCount,
                 transactionCount
         );
-
-        System.out.println("📦 프로필 DTO: " + dto); // 로그 출력
-
-        return dto;
     }
-
-
 }

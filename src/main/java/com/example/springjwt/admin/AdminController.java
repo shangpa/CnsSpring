@@ -1,4 +1,4 @@
-package com.example.springjwt.admin;
+ package com.example.springjwt.admin;
 
 import com.example.springjwt.User.JoinService;
 import com.example.springjwt.User.UserEntity;

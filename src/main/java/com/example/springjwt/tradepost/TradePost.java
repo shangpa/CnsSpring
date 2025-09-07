@@ -92,13 +92,14 @@ public class TradePost {
     private java.time.LocalDateTime createdAt;
 
     @Version
+    @Column(nullable = false)
     private Long version;
 
     @PrePersist
     protected void onCreate() {
         java.time.LocalDateTime now = java.time.LocalDateTime.now();
         this.createdAt = now;
-        if (this.updatedAt == null) this.updatedAt = now; // ✅ 최초값
+        if (this.updatedAt == null) this.updatedAt = now; // 최초값
     }
 
     public boolean isUpProhibited() {

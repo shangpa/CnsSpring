@@ -54,18 +54,21 @@ public class ShortsVideoController {
             @RequestBody RecipeShortCreateRequest request,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        System.out.println("🔎 받은 isPublic 값: " + request.isPublic());
         try {
+            if (userDetails == null) return ResponseEntity.status(401).build();
+            if (request.getTitle() == null || request.getTitle().isBlank()
+                    || request.getVideoUrl() == null || request.getVideoUrl().isBlank()) {
+                return ResponseEntity.badRequest().build();
+            }
             UserEntity user = userDetails.getUserEntity();
-            ShortsVideo shortsVideo = ShortsVideo.builder()
-                    .title(request.getTitle())
-                    .videoUrl(request.getVideoUrl())
-                    .isPublic(request.isPublic())
-                    .createdAt(LocalDateTime.now())
-                    .user(user)
-                    .build();
 
-            ShortsVideo saved = shortsVideoRepository.save(shortsVideo);
+            ShortsVideo saved = shortsVideoService.createShorts(
+                    request.getTitle(),
+                    request.getVideoUrl(),
+                    request.getThumbnailUrl(),
+                    request.isPublic(),
+                    user
+            );
             return ResponseEntity.ok(saved.getId());
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();

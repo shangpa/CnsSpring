@@ -32,14 +32,19 @@ public class ShortsVideoService {
         return "/uploads/shorts/" + fileName;
     }
 
-    // 👇 새로 추가: 업로드된 URL을 이용해 Shorts 엔티티 등록
-    public ShortsVideo createShorts(String title, String videoUrl, boolean isPublic, UserEntity user) {
-        if (!StringUtils.hasText(videoUrl)) {
+    // 업로드된 URL을 이용해 Shorts 엔티티 등록
+    public ShortsVideo createShorts(String title,
+                                    String videoUrl,
+                                    String thumbnailUrl,
+                                    boolean isPublic,
+                                    UserEntity user) {
+        if (!org.springframework.util.StringUtils.hasText(videoUrl)) {
             throw new IllegalArgumentException("videoUrl이 비어 있습니다.");
         }
         ShortsVideo shortsVideo = ShortsVideo.builder()
                 .title(title)
                 .videoUrl(videoUrl)
+                .thumbnailUrl(thumbnailUrl)
                 .isPublic(isPublic)
                 .createdAt(LocalDateTime.now())
                 .user(user)
@@ -49,8 +54,8 @@ public class ShortsVideoService {
 
     // ===== 아래 기존 메서드 유지 =====
     public ShortsVideo uploadVideo(MultipartFile file, String title, boolean isPublic, UserEntity user) throws IOException {
-        String videoUrl = storeFile(file); // ← 내부적으로 재사용
-        return createShorts(title, videoUrl, isPublic, user);
+        String videoUrl = storeFile(file);
+        return createShorts(title, videoUrl, /* thumbnailUrl */ null, isPublic, user); // null 추가
     }
 
     // 최신순

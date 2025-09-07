@@ -7,5 +7,6 @@ import lombok.Setter;
 public class RecipeShortCreateRequest {
     private String title;
     private String videoUrl;
+    private String thumbnailUrl;
     private boolean isPublic = true;
 }

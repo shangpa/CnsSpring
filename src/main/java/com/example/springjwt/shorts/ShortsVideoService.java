@@ -32,19 +32,19 @@ public class ShortsVideoService {
         return "/uploads/shorts/" + fileName;
     }
 
-    // 업로드된 URL을 이용해 Shorts 엔티티 등록
-    public ShortsVideo createShorts(String title,
-                                    String videoUrl,
-                                    String thumbnailUrl,
-                                    boolean isPublic,
-                                    UserEntity user) {
-        if (!org.springframework.util.StringUtils.hasText(videoUrl)) {
-            throw new IllegalArgumentException("videoUrl이 비어 있습니다.");
-        }
+    private String toRelative(String url) {
+        if (url == null || url.isBlank()) return null;
+        int idx = url.indexOf("/uploads/");
+        return (idx >= 0) ? url.substring(idx) : url; // "/uploads/..." 만 남김
+    }
+
+    public ShortsVideo createShorts(String title, String videoUrl, String thumbnailUrl, boolean isPublic, UserEntity user) {
+        String relVideo = toRelative(videoUrl);
+        String relThumb = toRelative(thumbnailUrl);
         ShortsVideo shortsVideo = ShortsVideo.builder()
                 .title(title)
-                .videoUrl(videoUrl)
-                .thumbnailUrl(thumbnailUrl)
+                .videoUrl(relVideo)
+                .thumbnailUrl(relThumb)
                 .isPublic(isPublic)
                 .createdAt(LocalDateTime.now())
                 .user(user)

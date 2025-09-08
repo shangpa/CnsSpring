@@ -24,68 +24,92 @@ public class JWTFilter extends OncePerRequestFilter {
         this.userRepository = userRepository;
     }
 
+    // ✅ 공개(permitAll) 경로는 필터를 아예 건너뛴다.
+    private boolean isPublic(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        String method = request.getMethod();
+
+        // CORS preflight
+        if ("OPTIONS".equalsIgnoreCase(method)) return true;
+
+        // 정적 리소스(동영상/썸네일)
+        if (uri.startsWith("/uploads/")) return true;
+
+        // 숏폼 공개 API (로그인 없이 조회 가능해야 하는 것들)
+        if (uri.equals("/api/shorts/random")) return true;
+        if (uri.equals("/api/shorts/random3")) return true;
+        if (uri.matches("^/api/shorts/\\d+$")) return true; // /api/shorts/{userId}
+
+        // 이미 공개로 쓰는 엔드포인트들 (필요시 추가)
+        if (uri.equals("/join") || uri.equals("/login") || uri.equals("/admin/join")) return true;
+        if (uri.equals("/api/recipes/search")) return true;
+        // 예: 전체 공개 레시피 목록/추천이 공개라면 여기도 허용
+        if (uri.startsWith("/api/recipes/public")) return true;
+        if (uri.startsWith("/api/recipes/seasonal")) return true;
+
+        return false;
+    }
+
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
             throws ServletException, IOException {
 
         String requestURI = request.getRequestURI();
 
-        // 인증 없이 접근 허용할 URI는 여기서 처리
-        if (
-                requestURI.equals("/join") ||
-                requestURI.equals("/login") ||
-                requestURI.equals("/api/recipes/search") ||
-                requestURI.equals("/admin/join") ||
-                requestURI.startsWith("/uploads")
-        ) {
+        // ✅ 공개 경로는 무조건 통과 (여기서 바로 다음 필터로)
+        if (isPublic(request)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // Authorization 헤더 읽기 및 로그 출력
+        // Authorization 헤더 확인
         String authHeader = request.getHeader("Authorization");
-        System.out.println("Received Authorization header: " + authHeader);
+        System.out.println("[JWTFilter] Authorization: " + authHeader + " | uri=" + requestURI);
 
+        // ✅ 토큰이 없거나 형식이 아니면 '그냥 통과'
+        // (인증이 필요한 경로는 뒤 단계에서 Spring Security가 막는다.
+        //  공개 경로가 아니더라도 여기서 403/401을 내지 않는다.)
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            System.out.println("token null");
             filterChain.doFilter(request, response);
             return;
         }
 
-        System.out.println("authorization now");
-        String token = authHeader.split(" ")[1];
+        String token = authHeader.substring(7);
 
+        // ✅ 만료 토큰도 조용히 통과(403 금지). 인증은 세팅하지 않음.
         if (jwtUtil.isExpired(token)) {
-            System.out.println("token expired");
+            System.out.println("[JWTFilter] token expired");
             filterChain.doFilter(request, response);
             return;
         }
 
+        // ✅ 토큰이 유효하면만 사용자 조회 및 인증 세팅
         String username = jwtUtil.getUsername(token);
         String role = jwtUtil.getRole(token);
-        System.out.println("✅ JWT 추출 결과:");
-        System.out.println("   - username: " + username);
-        System.out.println("   - role: " + role);
+        System.out.println("[JWTFilter] username=" + username + ", role=" + role);
 
         UserEntity userEntity = userRepository.findByUsername(username);
-        // ✅ 차단된 회원이면 즉시 요청 거부
+
+        // (선택) 차단 계정 즉시 차단 — 이 경우에만 403
         if (userEntity != null && userEntity.isBlocked()) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("application/json; charset=UTF-8");
             response.getWriter().write("{\"error\": \"차단된 회원입니다.\"}");
-            System.out.println("차단된 유저입니다 username:" + username);
+            System.out.println("[JWTFilter] blocked user: " + username);
             return;
         }
 
-        if (userEntity == null) {
-            System.out.println("JWT에 해당하는 유저가 없습니다");
-            filterChain.doFilter(request, response);
-            return;
+        if (userEntity != null) {
+            CustomUserDetails cud = new CustomUserDetails(userEntity);
+            Authentication authToken =
+                    new UsernamePasswordAuthenticationToken(cud, null, cud.getAuthorities());
+            SecurityContextHolder.getContext().setAuthentication(authToken);
+        } else {
+            // 유저가 없으면 인증 세팅 없이 통과 (인증 필요한 곳은 나중에 거부됨)
+            System.out.println("[JWTFilter] user not found for token");
         }
-
-        CustomUserDetails customUserDetails = new CustomUserDetails(userEntity);
-        Authentication authToken = new UsernamePasswordAuthenticationToken(customUserDetails, null, customUserDetails.getAuthorities());
-        SecurityContextHolder.getContext().setAuthentication(authToken);
 
         filterChain.doFilter(request, response);
     }

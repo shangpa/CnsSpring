@@ -6,6 +6,7 @@ import com.example.springjwt.jwt.LoginFilter;
 import com.example.springjwt.User.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;                     // ✅ 추가
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -44,14 +45,14 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // ✅ CORS 설정 추가
+    // CORS (필요 시 유지)
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173")); // ✅ 프론트엔드 주소
+        configuration.setAllowedOrigins(List.of("http://localhost:5173")); // 웹 프론트가 있으면 유지
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true); // 인증 정보 포함 허용
+        configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
@@ -61,24 +62,39 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ✅ CORS 사용
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
                 .authorizeHttpRequests(auth -> auth
+                        // ✅ 정적 리소스(동영상/썸네일) 공개
+                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+
+                        // ✅ 숏폼 보기용 GET API 공개 (비로그인 시청 허용)
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/shorts/random",
+                                "/api/shorts/random3",
+                                "/api/shorts/*"          // /api/shorts/{userId}
+                        ).permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // 기존 공개 엔드포인트 유지
                         .requestMatchers(
                                 "/login", "/", "/join", "/admin/join",
-                                "/uploads/**","/api/auth/**",
+                                "/api/auth/**",
                                 "/api/recipes/public", "/api/recipes/public/**",
                                 "/api/recipes/search", "/api/search/popular-keywords",
                                 "/api/trade-posts", "/api/trade-posts/**", "/api/main",
-                                "/api/boards/mine", "/trade-posts/popular", "/api/recipes/seasonal","/ws/**"
+                                "/api/boards/mine", "/trade-posts/popular",
+                                "/api/recipes/seasonal", "/ws/**", "/error"
                         ).permitAll()
+
+                        // 나머지는 인증
                         .requestMatchers("/api/trade-posts/*/complete-request").authenticated()
                         .requestMatchers("/api/user/**", "/api/fridges/ocr").authenticated()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
+                // JWT 필터들은 그대로
                 .addFilterBefore(new JWTFilter(jwtUtil, userRepository), UsernamePasswordAuthenticationFilter.class)
                 .addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration), jwtUtil), UsernamePasswordAuthenticationFilter.class)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));

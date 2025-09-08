@@ -48,20 +48,23 @@ public class ShortsVideoController {
         }
     }*/
 
-    // 최종 등록
+    // 최종 등록 (로그인 필요)
     @PostMapping("/register")
     public ResponseEntity<Long> registerShorts(
             @RequestBody RecipeShortCreateRequest request,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         try {
-            if (userDetails == null) return ResponseEntity.status(401).build();
+            if (userDetails == null) {
+                return ResponseEntity.status(401).build();
+            }
             if (request.getTitle() == null || request.getTitle().isBlank()
                     || request.getVideoUrl() == null || request.getVideoUrl().isBlank()) {
                 return ResponseEntity.badRequest().build();
             }
             UserEntity user = userDetails.getUserEntity();
 
+            // (선택) 서비스 내부에서 절대→상대 변환하도록 통일
             ShortsVideo saved = shortsVideoService.createShorts(
                     request.getTitle(),
                     request.getVideoUrl(),
@@ -103,21 +106,26 @@ public class ShortsVideoController {
     }*/
 
 
-    //랜덤시드 재생
+    // 랜덤시드 재생 (비로그인 허용)
     @GetMapping("/random")
     public ResponseEntity<List<ShortsListDto>> randomBySeed(
-            @RequestParam String seed,
+            @RequestParam(required = false) String seed,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @AuthenticationPrincipal CustomUserDetails userDetails
+            @AuthenticationPrincipal CustomUserDetails userDetails // null 가능
     ) {
-        UserEntity user = userDetails.getUserEntity(); // 필요 시 현재 로그인 유저 확인 가능
-        var list = shortsVideoService.getRandomBySeed(seed, page, size);
-        System.out.println("[/api/shorts/random] return size=" + list.size());
-        return ResponseEntity.ok(shortsVideoService.getRandomBySeed(seed, page, size));
+        // seed 기본값
+        String s = (seed == null || seed.isBlank()) ? "default" : seed;
+
+        // 요청 방어
+        int safePage = Math.max(0, page);
+        int safeSize = Math.min(Math.max(1, size), 50);
+
+        var list = shortsVideoService.getRandomBySeed(s, safePage, safeSize);
+        return ResponseEntity.ok(list);
     }
 
-    //유저별정렬
+    // 유저별 정렬 (비로그인 허용)
     @GetMapping("/{userId}")
     public ResponseEntity<ShortsUserVideoListResponse> getUserShorts(
             @PathVariable int userId,
@@ -125,14 +133,13 @@ public class ShortsVideoController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "30") int size
     ) {
-        // 정렬 키 매핑
         Sort sortObj = switch (sort) {
             case "views" -> Sort.by(Sort.Direction.DESC, "viewCount");
-            case "date"  -> Sort.by(Sort.Direction.ASC,  "createdAt");   // 오래된→최신
-            default      -> Sort.by(Sort.Direction.DESC, "createdAt");   // latest: 최신→오래된
+            case "date"  -> Sort.by(Sort.Direction.ASC,  "createdAt");
+            default      -> Sort.by(Sort.Direction.DESC, "createdAt");
         };
 
-        Pageable pageable = PageRequest.of(Math.max(0, page), Math.max(1, size), sortObj);
+        Pageable pageable = PageRequest.of(Math.max(0, page), Math.min(Math.max(1, size), 100), sortObj);
         var pageResult = shortsVideoRepository.findByUser_IdAndIsPublicTrue(userId, pageable);
 
         var list = pageResult.getContent().stream()
@@ -142,7 +149,7 @@ public class ShortsVideoController {
         return ResponseEntity.ok(new ShortsUserVideoListResponse(list));
     }
 
-    // 랜덤 3개(레시피 탭)
+    // 랜덤 3개(레시피 탭) (비로그인 허용)
     @GetMapping("/random3")
     public ResponseEntity<List<ShortsCardDto>> random3() {
         return ResponseEntity.ok(shortsVideoService.getRandom3Cards());

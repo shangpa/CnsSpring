@@ -1,20 +1,22 @@
 package com.example.springjwt.shorts;
 
 import com.example.springjwt.User.UserEntity;
-import com.example.springjwt.User.UserService;
+import com.example.springjwt.User.UserRepository;
+import com.example.springjwt.board.CommentRequestDTO;
 import com.example.springjwt.dto.CustomUserDetails;
+import com.example.springjwt.notification.FCMService;
+import com.example.springjwt.shorts.comment.CommentResponseDTO;
+import com.example.springjwt.shorts.comment.ShortComment;
+import com.example.springjwt.shorts.comment.ShortCommentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import java.io.File;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/shorts")
@@ -23,6 +25,9 @@ public class ShortsVideoController {
 
     private final ShortsVideoService shortsVideoService;
     private final ShortsVideoRepository shortsVideoRepository;
+    private final UserRepository userRepository;
+    private final ShortCommentRepository shortCommentRepository;
+    private final FCMService fcmService;
    /* // 파일만 업로드
     @PostMapping("/upload-file")
     public ResponseEntity<String> uploadShortsFileOnly(
@@ -153,5 +158,43 @@ public class ShortsVideoController {
     @GetMapping("/random3")
     public ResponseEntity<List<ShortsCardDto>> random3() {
         return ResponseEntity.ok(shortsVideoService.getRandom3Cards());
+    }
+
+    //댓글 작성
+    @PostMapping("/{id}/comment")
+    public ResponseEntity<?> addComment(@PathVariable Long id,
+                                        @RequestBody CommentRequestDTO dto,
+                                        @AuthenticationPrincipal UserDetails userDetails) {
+        UserEntity user = userRepository.findByUsername(userDetails.getUsername());
+        Long shortsId = Long.valueOf(id); // id가 int일 경우 변환
+        ShortsVideo shorts = shortsVideoRepository.findById(shortsId)
+                .orElseThrow(() -> new RuntimeException("ShortsVideo not found"));
+
+        ShortComment comment = new ShortComment();
+        comment.setUser(user);
+        comment.setShortsVideo(shorts);
+        comment.setContent(dto.getContent());
+
+        shortCommentRepository.save(comment);
+        shorts.setCommentCount(shorts.getCommentCount() + 1);
+        UserEntity writer = shorts.getUser();
+        if (!writer.getUsername().equals(user.getUsername())) {
+            fcmService.sendNotificationToUser(
+                    writer,
+                    "댓글 알림",
+                    user.getUsername() + "님이 당신의 게시글에 댓글을 남겼습니다.",
+                    "COMMUNITY"
+            );
+        }
+        shortsVideoRepository.save(shorts);
+        return ResponseEntity.ok("댓글 등록 완료");
+    }
+
+    //댓글 조회
+    @GetMapping("/{id}/comments")
+    public List<CommentResponseDTO> getComments(@PathVariable Long id) {
+        return shortCommentRepository.findByShortsVideoIdOrderByCreatedAtAsc(id).stream()
+                .map(CommentResponseDTO::fromEntity)
+                .toList();
     }
 }

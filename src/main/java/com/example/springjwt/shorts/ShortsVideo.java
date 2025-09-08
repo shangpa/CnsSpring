@@ -1,10 +1,13 @@
 package com.example.springjwt.shorts;
 
 import com.example.springjwt.User.UserEntity;
+import com.example.springjwt.shorts.comment.ShortComment;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "shorts_video")
@@ -34,4 +37,11 @@ public class ShortsVideo {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private UserEntity user;     // 업로드한 유저
+
+
+    @OneToMany(mappedBy = "shortsVideo")
+    private List<ShortComment> comments = new ArrayList<>();
+
+    @Column(nullable = false)
+    private int commentCount = 0;
 }

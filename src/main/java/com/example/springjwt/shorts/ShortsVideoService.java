@@ -1,6 +1,7 @@
 package com.example.springjwt.shorts;
 
 import com.example.springjwt.User.UserEntity;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -75,11 +76,12 @@ public class ShortsVideoService {
     }
 
     // 조회수 증가
-    public void increaseViewCount(Long shortsId) {
-        ShortsVideo shorts = shortsVideoRepository.findById(shortsId)
-                .orElseThrow(() -> new RuntimeException("숏츠 없음"));
-        shorts.setViewCount(shorts.getViewCount() + 1);
-        shortsVideoRepository.save(shorts);
+    @Transactional
+    public void incrementViewCount(Long shortsId) {
+        int updated = shortsVideoRepository.incrementViewCount(shortsId);
+        if (updated == 0) {
+            throw new RuntimeException("숏츠 없음");
+        }
     }
 
     //랜덤시드

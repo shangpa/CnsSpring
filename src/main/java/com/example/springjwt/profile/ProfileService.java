@@ -69,4 +69,7 @@ public class ProfileService {
             return true; // 팔로우됨
         }
     }
+    public boolean isFollowing(int requesterId, int targetUserId) {
+        return followRepository.existsByFollowerIdAndFollowingId(requesterId, targetUserId);
+    }
 }

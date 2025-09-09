@@ -31,4 +31,14 @@ public class ProfileController {
         boolean nowFollowing = profileService.toggleFollow(requesterId, userId);
         return ResponseEntity.ok(nowFollowing ? "팔로우했습니다." : "팔로우를 취소했습니다.");
     }
+
+    @GetMapping("/{userId}/is-following")
+    public ResponseEntity<Boolean> isFollowing(
+            @PathVariable int userId,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        int requesterId = userDetails.getUserEntity().getId();
+        boolean following = profileService.isFollowing(requesterId, userId);
+        return ResponseEntity.ok(following);
+    }
 }

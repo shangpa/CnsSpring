@@ -98,7 +98,7 @@ public class ShortsVideoController {
     // 조회수 증가
     @PostMapping("/{id}/view")
     public ResponseEntity<Void> increaseView(@PathVariable Long id) {
-        shortsVideoService.increaseViewCount(id);
+        shortsVideoService.incrementViewCount(id); // 이름만 살짝 다르게
         return ResponseEntity.ok().build();
     }
     /*

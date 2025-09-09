@@ -3,6 +3,7 @@ package com.example.springjwt.shorts;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -33,4 +34,9 @@ public interface ShortsVideoRepository extends JpaRepository<ShortsVideo, Long> 
     );
 
     Page<ShortsVideo> findByUser_IdAndIsPublicTrue(int userId, Pageable pageable);
+
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("update ShortsVideo s set s.viewCount = s.viewCount + 1 where s.id = :id")
+    int incrementViewCount(@Param("id") Long id);
 }

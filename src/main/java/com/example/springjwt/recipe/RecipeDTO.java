@@ -30,6 +30,9 @@ public class RecipeDTO {
     private boolean isPublic;
     private String writer;
     private String videoUrl;
+    private String recipeType="IMAGE"; // IMAGE, VIDEO, BOTH
+    @JsonProperty("isDraft")
+    private boolean isDraft=false;
 
     public static RecipeDTO fromEntity(Recipe recipe) {
         return RecipeDTO.builder()
@@ -49,6 +52,8 @@ public class RecipeDTO {
                 .isPublic(recipe.isPublic())
                 .writer(recipe.getUser().getUsername())
                 .videoUrl(recipe.getVideoUrl())
+                .recipeType(recipe.getRecipeType().name())
+                .isDraft(recipe.isDraft())
                 .build();
     }
 
@@ -68,6 +73,8 @@ public class RecipeDTO {
                 .createdAt(this.createdAt != null ? this.createdAt : LocalDateTime.now())
                 .isPublic(this.isPublic)
                 .videoUrl(this.videoUrl)
+                .recipeType(this.recipeType != null ? RecipeType.valueOf(this.recipeType) : RecipeType.IMAGE)
+                .isDraft(this.isDraft)
                 .build();
     }
     public boolean getIsPublic() {

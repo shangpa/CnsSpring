@@ -53,7 +53,6 @@ public class RecipeController {
 
         System.out.println("Received RecipeDTO: " + recipeDTO);
         Recipe recipe = recipeService.createRecipe(recipeDTO, userDetails.getUsername());
-
         RecipeResponseDTO response = new RecipeResponseDTO(
                 true,
                 "레시피가 성공적으로 생성되었습니다.",

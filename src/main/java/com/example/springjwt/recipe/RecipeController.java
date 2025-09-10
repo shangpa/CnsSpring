@@ -148,4 +148,24 @@ public class RecipeController {
         List<RecipeSearchResponseDTO> list = recipeService.suggestByType(type);
         return ResponseEntity.ok(list);
     }
+
+    // 내 임시저장 레시피 리스트
+    @GetMapping("/drafts")
+    public ResponseEntity<List<RecipeDTO>> getMyDrafts(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        List<Recipe> drafts = recipeRepository.findByUserIdAndIsDraftTrue(userDetails.getUserEntity().getId());
+        List<RecipeDTO> result = drafts.stream()
+                .map(RecipeDTO::fromEntity)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(result);
+    }
+    
+    //임시저장 레시피 불러오기
+    @GetMapping("/drafts/{recipeId}")
+    public ResponseEntity<RecipeDTO> getMyDraftById(
+            @PathVariable Long recipeId,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        RecipeDTO draft = recipeService.getMyDraftById(recipeId, userDetails.getUserEntity());
+        return ResponseEntity.ok(draft);
+    }
 }

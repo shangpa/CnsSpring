@@ -73,4 +73,11 @@ public class Recipe {
         return this.ingredients;
     }
 
+
+    @Column(nullable = false)
+    private boolean isDraft = false;   // 임시저장 여부
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private RecipeType recipeType;     // 작성 타입 (IMAGE / VIDEO / BOTH)
 }

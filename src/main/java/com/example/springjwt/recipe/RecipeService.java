@@ -64,20 +64,20 @@ public class  RecipeService {
 
         switch (sort != null ? sort : "viewCount") {
             case "likes":
-                recipes = recipeRepository.findByIsPublicTrueOrderByLikesDesc();
+                recipes = recipeRepository.findByIsPublicTrueAndIsDraftFalseOrderByLikesDesc();
                 break;
             case "latest":
-                recipes = recipeRepository.findByIsPublicTrueOrderByCreatedAtDesc();
+                recipes = recipeRepository.findByIsPublicTrueAndIsDraftFalseOrderByCreatedAtDesc();
                 break;
             case "shortTime":
-                recipes = recipeRepository.findByIsPublicTrueOrderByCookingTimeAsc();
+                recipes = recipeRepository.findByIsPublicTrueAndIsDraftFalseOrderByCookingTimeAsc();
                 break;
             case "longTime":
-                recipes = recipeRepository.findByIsPublicTrueOrderByCookingTimeDesc();
+                recipes = recipeRepository.findByIsPublicTrueAndIsDraftFalseOrderByCookingTimeDesc();
                 break;
             case "viewCount":
             default:
-                recipes = recipeRepository.findByIsPublicTrueOrderByViewCountDesc();
+                recipes = recipeRepository.findByIsPublicTrueAndIsDraftFalseOrderByViewCountDesc();
                 break;
         }
 
@@ -166,10 +166,13 @@ public class  RecipeService {
         List<Recipe> recipes;
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         UserEntity currentUser = userRepository.findByUsername(username);
+
         if (title == null || title.trim().isEmpty()) {
-            recipes = recipeRepository.findAll();
+            // 전체 검색 → 공개 + 임시저장 제외
+            recipes = recipeRepository.findByIsPublicTrueAndIsDraftFalse();
         } else {
-            recipes = recipeRepository.findByTitleContainingIgnoreCase(title);
+            // 제목 검색 → 공개 + 임시저장 제외
+            recipes = recipeRepository.findByTitleContainingIgnoreCaseAndIsPublicTrueAndIsDraftFalse(title);
         }
 
         return recipes.stream()
@@ -469,5 +472,11 @@ public class  RecipeService {
             // 목록 카드용 가벼운 DTO를 쓰고 싶으면 fromEntity 쪽에서 큰 텍스트 null 처리
             return RecipeSearchResponseDTO.fromEntity(recipe, avgRating, reviewCount, liked);
         }).toList();
+    }
+
+    public RecipeDTO getMyDraftById(Long recipeId, UserEntity user) {
+        Recipe recipe = recipeRepository.findByRecipeIdAndUserIdAndIsDraftTrue(recipeId, user.getId())
+                .orElseThrow(() -> new RuntimeException("임시저장 레시피를 찾을 수 없습니다."));
+        return RecipeDTO.fromEntity(recipe);
     }
 }

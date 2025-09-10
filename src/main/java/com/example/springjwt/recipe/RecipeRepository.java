@@ -134,4 +134,33 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
         LIMIT :limit
         """, nativeQuery = true)
     List<Recipe> findRandomPublicByRegex(@Param("regex") String regex, @Param("limit") int limit);
+
+    // 공개된 레시피만 (임시저장 제외)
+    List<Recipe> findByIsPublicTrueAndIsDraftFalse();
+
+    // 최신순
+    List<Recipe> findByIsPublicTrueAndIsDraftFalseOrderByCreatedAtDesc();
+
+    //짧은시간
+    List<Recipe> findByIsPublicTrueAndIsDraftFalseOrderByCookingTimeAsc();
+
+    //긴시간
+    List<Recipe> findByIsPublicTrueAndIsDraftFalseOrderByCookingTimeDesc();
+    
+    // 좋아요순
+    List<Recipe> findByIsPublicTrueAndIsDraftFalseOrderByLikesDesc();
+
+    // 조회수순
+    List<Recipe> findByIsPublicTrueAndIsDraftFalseOrderByViewCountDesc();
+
+    // 특정 사용자 레시피 (임시저장 제외)
+    List<Recipe> findByUserIdAndIsDraftFalse(int userId);
+
+    // 특정 사용자 임시저장만
+    List<Recipe> findByUserIdAndIsDraftTrue(int userId);
+
+    List<Recipe> findByTitleContainingIgnoreCaseAndIsPublicTrueAndIsDraftFalse(String title);
+
+    // 특정 유저 + 특정 레시피 → 임시저장 여부 체크
+    Optional<Recipe> findByRecipeIdAndUserIdAndIsDraftTrue(Long recipeId, int userId);
 }

@@ -43,6 +43,7 @@ public class ProfileService {
                 .followingCount(following)
                 .following(isFollowing)
                 .mine(mine)
+                .profileImageUrl(target.getProfileImageUrl())
                 .build();
     }
 

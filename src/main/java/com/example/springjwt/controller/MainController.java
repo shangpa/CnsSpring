@@ -41,7 +41,13 @@ public class MainController {
 
         Long id = (long) userEntity.getId();
         // LoginInfoResponse로 반환
-        return new LoginInfoResponse(id, userName, name);
+        UserEntity u = customUserDetails.getUserEntity();
+        return new LoginInfoResponse(
+                (long) u.getId(),
+                u.getUsername(),
+                u.getName(),
+                u.getProfileImageUrl()  // ← 네 번째 인자 추가
+        );
     }
 
 

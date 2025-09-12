@@ -5,11 +5,13 @@ import com.example.springjwt.dto.LoginInfoResponse;
 import com.example.springjwt.dto.UserUpdateRequestDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
@@ -46,14 +48,14 @@ public class UserController {
     record UserLocationResponse(Double latitude, Double longitude) {}
 
     // 마이페이지 사용자 이름 출력
-    // 마이페이지 사용자 이름 출력
     @GetMapping("/profile")
     public ResponseEntity<LoginInfoResponse> getUserInfo(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        UserEntity user = userDetails.getUserEntity();
+        UserEntity u = userDetails.getUserEntity();
         return ResponseEntity.ok(new LoginInfoResponse(
-                (long) user.getId(),
-                user.getUsername(),
-                user.getName()
+                (long) u.getId(),
+                u.getUsername(),
+                u.getName(),
+                u.getProfileImageUrl()
         ));
     }
 
@@ -67,6 +69,25 @@ public class UserController {
         userService.updateUser(userDetails.getUserEntity().getId(), dto);
         return ResponseEntity.ok("수정 완료");
     }
+    
+    @PostMapping(value = "/profile-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Map<String, String>> uploadProfileImage(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestPart("image") MultipartFile image
+    ) {
+        int userId = userDetails.getUserEntity().getId();
+
+        // 1) 파일 저장
+        String url = userService.saveProfileImage(userId, image);
+
+        // 2) DB 업데이트
+        userService.updateProfileImageUrl(userId, url);
+
+        // 3) 클라이언트에 반환
+        return ResponseEntity.ok(Map.of("profileImageUrl", url));
+    }
+
+
     @PostMapping("/check-password")
     public ResponseEntity<?> checkPassword(
             @AuthenticationPrincipal CustomUserDetails userDetails,

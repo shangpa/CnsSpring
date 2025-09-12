@@ -49,4 +49,7 @@ public class UserEntity {
     private boolean blocked = false;
 
     private LocalDateTime blockedAt;
+
+    @Column(length = 500)
+    private String profileImageUrl;
 }

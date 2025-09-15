@@ -106,4 +106,19 @@ public class ShortsVideoService {
         return shortsVideoRepository.findRandomSimple(3)
                 .stream().map(ShortsCardDto::from).toList();
     }
+
+    //검색
+    public List<ShortsSearchItem> search(String keyword) {
+        String q = (keyword == null) ? "" : keyword.trim();
+        var list = shortsVideoRepository.searchPublicByKeyword(q);
+        return list.stream()
+                .map(s -> new ShortsSearchItem(
+                        s.getId(),
+                        s.getTitle(),
+                        // 작성자명: 프로젝트 필드에 맞게 선택
+                        (s.getUser() != null ? s.getUser().getUsername() : null),
+                        s.getThumbnailUrl()
+                ))
+                .toList();
+    }
 }

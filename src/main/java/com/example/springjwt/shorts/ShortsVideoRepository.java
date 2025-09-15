@@ -39,4 +39,15 @@ public interface ShortsVideoRepository extends JpaRepository<ShortsVideo, Long> 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update ShortsVideo s set s.viewCount = s.viewCount + 1 where s.id = :id")
     int incrementViewCount(@Param("id") Long id);
+
+    // 공개된 쇼츠 검색 (JPQL) — 제목만 검색
+    @Query("""
+    SELECT s
+    FROM ShortsVideo s
+    WHERE s.isPublic = true
+      AND LOWER(s.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
+    ORDER BY s.createdAt DESC
+""")
+    List<ShortsVideo> searchPublicByKeyword(@Param("keyword") String keyword);
+
 }

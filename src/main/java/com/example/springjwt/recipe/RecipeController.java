@@ -11,7 +11,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.data.domain.Page;
+import com.example.springjwt.search.RecipeSearchService;
+import com.example.springjwt.search.SortKey;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,6 +27,7 @@ public class RecipeController {
     private final RecipeService recipeService;
     private final SearchKeywordService searchKeywordService;
     private final RecipeRepository recipeRepository;
+    private final RecipeSearchService recipeSearchService;
 
     // 레시피 전체 조회
     @GetMapping
@@ -84,17 +87,40 @@ public class RecipeController {
         return ResponseEntity.noContent().build();
     }
 
-    // 레시피 검색 + 검색어 저장
+    // 프론트가 호출하는 검색 (리스트)
     @GetMapping("/search")
-    public ResponseEntity<List<RecipeSearchResponseDTO>> searchRecipes(
-            @RequestParam(required = false) String title,
-            @AuthenticationPrincipal UserDetails userDetails
+    public List<Recipe> searchRecipes(
+            @RequestParam String title,
+            @RequestParam(required = false) String category,   // "koreaFood" 등
+            @RequestParam(required = false) String sort        // viewCount|likes|latest|shortTime|longTime
+    ) {
+        if (title != null && !title.isBlank()) {
+            searchKeywordService.saveKeyword(title);          // 인기 검색어 저장
+        }
+        SortKey key = parseSort(sort);
+        Page<Recipe> page = recipeSearchService.search(title, category, key, 0, 200);
+        return page.getContent();
+    }
+
+    // ✅ 페이징 버전 (선택)
+    @GetMapping("/search/page")
+    public Page<Recipe> searchRecipesPaged(
+            @RequestParam String title,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String sort,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
     ) {
         if (title != null && !title.isBlank()) {
             searchKeywordService.saveKeyword(title);
         }
-        List<RecipeSearchResponseDTO> recipes = recipeService.searchRecipesByTitle(title);
-        return ResponseEntity.ok(recipes);
+        SortKey key = parseSort(sort);
+        return recipeSearchService.search(title, category, key, page, size);
+    }
+
+    private SortKey parseSort(String sort) {
+        if (sort == null || sort.isBlank()) return SortKey.latest;
+        try { return SortKey.valueOf(sort); } catch (IllegalArgumentException e) { return SortKey.latest; }
     }
 
     // 메인 - 냉장고 재료 추천 레시피

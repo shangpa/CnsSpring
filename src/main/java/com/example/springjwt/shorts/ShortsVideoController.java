@@ -197,4 +197,10 @@ public class ShortsVideoController {
                 .map(CommentResponseDTO::fromEntity)
                 .toList();
     }
+
+    //검색
+    @GetMapping("/search")
+    public List<ShortsSearchItem> search(@RequestParam String keyword) {
+        return shortsVideoService.search(keyword);
+    }
 }

@@ -82,7 +82,7 @@ public class SecurityConfig {
                                 "/login", "/", "/join", "/admin/join",
                                 "/api/auth/**",
                                 "/api/recipes/public", "/api/recipes/public/**",
-                                "/api/recipes/search", "/api/search/popular-keywords",
+                                "/api/recipes/search", "/api/shorts/search", "/api/search/popular-keywords",
                                 "/api/trade-posts", "/api/trade-posts/**", "/api/main",
                                 "/api/boards/mine", "/trade-posts/popular",
                                 "/api/recipes/seasonal", "/ws/**", "/error"

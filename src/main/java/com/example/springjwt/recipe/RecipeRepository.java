@@ -124,6 +124,10 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
     //레시피 검색 - 제철 음식 추천
     List<Recipe> findByTitleInAndIsPublicTrue(List<String> titles);
 
+    //레시피 검색
+    Page<Recipe> findByIsPublicTrueAndTitleContainingIgnoreCase(String title, Pageable pageable);
+    Page<Recipe> findByIsPublicTrueAndTitleContainingIgnoreCaseAndCategory(String title, RecipeCategory category, Pageable pageable);
+
     //레시피 탭 - 레시피 이거 어때요?
     @Query(value = """
         SELECT * 

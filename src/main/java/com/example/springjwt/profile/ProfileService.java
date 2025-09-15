@@ -3,12 +3,17 @@ package com.example.springjwt.profile;
 
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
+import com.example.springjwt.profile.follow.Follow;
 import com.example.springjwt.profile.follow.FollowRepository;
+import com.example.springjwt.profile.follow.FollowUserResponse;
 import com.example.springjwt.recipe.RecipeRepository;
 import com.example.springjwt.shorts.ShortsVideoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -72,5 +77,52 @@ public class ProfileService {
     }
     public boolean isFollowing(int requesterId, int targetUserId) {
         return followRepository.existsByFollowerIdAndFollowingId(requesterId, targetUserId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<FollowUserResponse> getFollowings(int targetUserId, int requesterId) {
+        // targetUserId가 팔로우하는 사람들 (= targetUserId의 followings)
+        List<Follow> rows = followRepository.findByFollower_IdOrderByCreatedAtDesc(targetUserId);
+
+        return rows.stream().map(row -> {
+            UserEntity following = row.getFollowing();
+
+            boolean followingByMe = followRepository
+                    .existsByFollower_IdAndFollowing_Id(requesterId, following.getId());
+            boolean followingMe = followRepository
+                    .existsByFollower_IdAndFollowing_Id(following.getId(), requesterId);
+
+            return FollowUserResponse.builder()
+                    .userId(following.getId())
+                    .name(following.getName())             // ← name
+                    .username(following.getUsername())     // ← username
+                    .profileImageUrl(following.getProfileImageUrl())
+                    .followingByMe(followingByMe)
+                    .followingMe(followingMe)
+                    .build();
+        }).collect(Collectors.toList());
+    }
+    @Transactional(readOnly = true)
+    public List<FollowUserResponse> getFollowers(int targetUserId, int requesterId) {
+        // targetUserId의 팔로워들 (누가 나를 팔로우하는가) => following_id = targetUserId
+        List<Follow> rows = followRepository.findByFollowing_IdOrderByCreatedAtDesc(targetUserId);
+
+        return rows.stream().map(row -> {
+            UserEntity follower = row.getFollower(); // 나를 팔로우한 사람
+
+            boolean followingByMe = followRepository
+                    .existsByFollower_IdAndFollowing_Id(requesterId, follower.getId());   // 내가 그를 팔로우?
+            boolean followingMe = followRepository
+                    .existsByFollower_IdAndFollowing_Id(follower.getId(), requesterId);   // 그가 나를 팔로우?
+
+            return FollowUserResponse.builder()
+                    .userId(follower.getId())
+                    .name(follower.getName())
+                    .username(follower.getUsername())
+                    .profileImageUrl(follower.getProfileImageUrl())
+                    .followingByMe(followingByMe)
+                    .followingMe(followingMe)
+                    .build();
+        }).collect(java.util.stream.Collectors.toList());
     }
 }

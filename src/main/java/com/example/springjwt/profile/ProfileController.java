@@ -1,10 +1,13 @@
 package com.example.springjwt.profile;
 
 import com.example.springjwt.dto.CustomUserDetails;
+import com.example.springjwt.profile.follow.FollowUserResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/profile")
@@ -23,13 +26,13 @@ public class ProfileController {
     }
 
     @PostMapping("/{userId}/follow-toggle")
-    public ResponseEntity<String> toggleFollow(
+    public ResponseEntity<Void> toggleFollow(
             @PathVariable int userId,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         int requesterId = userDetails.getUserEntity().getId();
-        boolean nowFollowing = profileService.toggleFollow(requesterId, userId);
-        return ResponseEntity.ok(nowFollowing ? "팔로우했습니다." : "팔로우를 취소했습니다.");
+        profileService.toggleFollow(requesterId, userId);
+        return ResponseEntity.ok().build(); // 본문 없음
     }
 
     @GetMapping("/{userId}/is-following")
@@ -40,5 +43,23 @@ public class ProfileController {
         int requesterId = userDetails.getUserEntity().getId();
         boolean following = profileService.isFollowing(requesterId, userId);
         return ResponseEntity.ok(following);
+    }
+
+    @GetMapping("/{userId}/followers")
+    public ResponseEntity<List<FollowUserResponse>> getFollowers(
+            @PathVariable int userId,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        int requesterId = userDetails.getUserEntity().getId();
+        return ResponseEntity.ok(profileService.getFollowers(userId, requesterId));
+    }
+
+    @GetMapping("/{userId}/followings")
+    public ResponseEntity<List<FollowUserResponse>> getFollowings(
+            @PathVariable int userId,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        int requesterId = userDetails.getUserEntity().getId();
+        return ResponseEntity.ok(profileService.getFollowings(userId, requesterId));
     }
 }

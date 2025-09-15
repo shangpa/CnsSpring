@@ -157,7 +157,7 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
     List<Recipe> findByUserIdAndIsDraftFalse(int userId);
 
     // 특정 사용자 임시저장만
-    List<Recipe> findByUserIdAndIsDraftTrue(int userId);
+    List<Recipe> findByUserIdAndIsDraftTrueOrderByCreatedAtDesc(Long userId);
 
     List<Recipe> findByTitleContainingIgnoreCaseAndIsPublicTrueAndIsDraftFalse(String title);
 

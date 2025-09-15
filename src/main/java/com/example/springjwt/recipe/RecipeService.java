@@ -9,7 +9,6 @@ import com.example.springjwt.api.OpenAiService;
 import com.example.springjwt.api.vision.IngredientParser;
 import com.example.springjwt.fridge.Fridge;
 import com.example.springjwt.fridge.FridgeRepository;
-import com.example.springjwt.mypage.LikeRecipe;
 import com.example.springjwt.mypage.LikeRecipeRepository;
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
@@ -21,22 +20,22 @@ import com.example.springjwt.review.Recipe.ReviewRepository;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Type;
-import java.util.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class  RecipeService {
+public class RecipeService {
+
     private final ReviewRepository reviewRepository;
     private final RecipeRepository recipeRepository;
     private final UserRepository userRepository;
@@ -48,6 +47,7 @@ public class  RecipeService {
     private final IngredientNameCache ingredientNameCache;
     private final IngredientParser ingredientParser;
     private final OpenAiService openAiService;
+
     private static final int SUGGEST_LIMIT = 3;
 
     // 전체 레시피 조회
@@ -55,123 +55,131 @@ public class  RecipeService {
         return recipeRepository.findAll();
     }
 
-    // 공개된 레시피만 정렬해서 가져오기
+    // 공개된 레시피만 정렬해서 가져오기 (비로그인 가드 포함)
     public List<RecipeSearchResponseDTO> getAllPublicRecipes(String sort) {
         List<Recipe> recipes;
-        // 로그인한 사용자 가져오기
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        UserEntity currentUser = userRepository.findByUsername(username);
+
+        String username = Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
+                .map(a -> a.getName()).orElse(null);
+        UserEntity currentUser = (username != null && !"anonymousUser".equalsIgnoreCase(username))
+                ? userRepository.findByUsername(username)
+                : null;
 
         switch (sort != null ? sort : "viewCount") {
-            case "likes":
-                recipes = recipeRepository.findByIsPublicTrueAndIsDraftFalseOrderByLikesDesc();
-                break;
-            case "latest":
-                recipes = recipeRepository.findByIsPublicTrueAndIsDraftFalseOrderByCreatedAtDesc();
-                break;
-            case "shortTime":
-                recipes = recipeRepository.findByIsPublicTrueAndIsDraftFalseOrderByCookingTimeAsc();
-                break;
-            case "longTime":
-                recipes = recipeRepository.findByIsPublicTrueAndIsDraftFalseOrderByCookingTimeDesc();
-                break;
-            case "viewCount":
-            default:
-                recipes = recipeRepository.findByIsPublicTrueAndIsDraftFalseOrderByViewCountDesc();
-                break;
+            case "likes"     -> recipes = recipeRepository.findByIsPublicTrueAndIsDraftFalseOrderByLikesDesc();
+            case "latest"    -> recipes = recipeRepository.findByIsPublicTrueAndIsDraftFalseOrderByCreatedAtDesc();
+            case "shortTime" -> recipes = recipeRepository.findByIsPublicTrueAndIsDraftFalseOrderByCookingTimeAsc();
+            case "longTime"  -> recipes = recipeRepository.findByIsPublicTrueAndIsDraftFalseOrderByCookingTimeDesc();
+            case "viewCount" -> recipes = recipeRepository.findByIsPublicTrueAndIsDraftFalseOrderByViewCountDesc();
+            default          -> recipes = recipeRepository.findByIsPublicTrueAndIsDraftFalseOrderByViewCountDesc();
         }
 
         return recipes.stream().map(recipe -> {
             Double avgRatingWrapper = reviewRepository.findAvgRatingByRecipe(recipe.getRecipeId());
             double avgRating = avgRatingWrapper != null ? avgRatingWrapper : 0.0;
             int reviewCount = reviewRepository.countByRecipe(recipe);
-            boolean liked = likeRecipeRepository.existsByUserAndRecipe(currentUser, recipe);
-
+            boolean liked = (currentUser != null) && likeRecipeRepository.existsByUserAndRecipe(currentUser, recipe);
             return RecipeSearchResponseDTO.fromEntity(recipe, avgRating, reviewCount, liked);
         }).collect(Collectors.toList());
     }
 
-    // 특정 레시피 조회
+    // 특정 레시피 조회 (조회수 증가)
+    @Transactional
     public Recipe getRecipeById(Long id) {
         Recipe recipe = recipeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("레시피를 찾을 수 없습니다: " + id));
-        recipe.setViewCount(recipe.getViewCount() + 1); // 조회수 1 증가
-        recipeRepository.save(recipe); // 저장
+        recipe.setViewCount(recipe.getViewCount() + 1);
+        // JPA 변경감지로 저장
         return recipe;
     }
 
-    // 레시피 생성
-    public Recipe createRecipe(RecipeDTO recipeDTO, String username) {
+    // 발행 레시피 생성 (초안 API와 구분)
+    @Transactional
+    public Recipe createRecipe(RecipeDTO dto, String username) {
+        // 초안 생성은 /api/recipes/drafts 로 분리되어 있으므로 방지
+        if (Boolean.TRUE.equals(dto.getIsDraft())) {
+            throw new IllegalArgumentException("초안은 /api/recipes/drafts 엔드포인트를 사용하세요.");
+        }
+
         UserEntity user = userRepository.findByUsername(username);
-        Recipe recipe = recipeDTO.toEntity();
-        recipe.setUser(user); // 로그인한 유저를 레시피 작성자로 설정
-        pointService.addPoint(
-                user,
-                PointActionType.RECIPE_WRITE,
-                1,
-                "레시피 작성 포인트 10점 적립"
-        );
+
+        // 발행용 엔티티
+        Recipe recipe = dto.toEntity(); // dto는 래퍼 타입 + 기본값 포함
+        recipe.setUser(user);
+        recipe.setDraft(false);
+        recipe.setPublic(Boolean.TRUE.equals(dto.getIsPublic()));
+
+        pointService.addPoint(user, PointActionType.RECIPE_WRITE, 1, "레시피 작성 포인트 10점 적립");
+
         Recipe savedRecipe = recipeRepository.save(recipe);
 
-        // 재료 JSON에서 재료명 파싱 → 캐시에 추가
-        List<String> ingredientNames = ingredientParser.extractNames(recipeDTO.getIngredients());
-        ingredientNameCache.addFromNames(ingredientNames);
-        System.out.println("새 레시피 등록 시 캐시에 추가된 재료: " + ingredientNames);
-        //  썸네일 자동 생성 조건:
-        // - 메인이미지가 없고
-        // - 조리순서(cookingSteps)가 존재할 경우만 AI 썸네일 생성
+        // 재료명 캐시에 추가 (NPE 가드)
+        if (dto.getIngredients() != null) {
+            List<String> ingredientNames = ingredientParser.extractNames(dto.getIngredients());
+            ingredientNameCache.addFromNames(ingredientNames);
+        }
+
+        // 썸네일 자동 생성 (메인이미지 없고, 조리순서가 있을 때)
         if ((savedRecipe.getMainImageUrl() == null || savedRecipe.getMainImageUrl().isBlank())
                 && savedRecipe.getCookingSteps() != null
                 && !savedRecipe.getCookingSteps().trim().isEmpty()) {
-
             try {
-                String prompt = buildPrompt(savedRecipe); // 새로 만들어줄 메서드
+                String prompt = buildPrompt(savedRecipe);
                 String imageUrl = openAiService.generateThumbnail(prompt);
-
                 savedRecipe.setMainImageUrl(imageUrl);
-                recipeRepository.save(savedRecipe); // 다시 저장
-
-                System.out.println("✅ AI 썸네일 생성 완료: " + imageUrl);
+                // 변경감지로 저장
             } catch (Exception e) {
-                System.out.println("⚠️ 썸네일 생성 실패: " + e.getMessage());
+                // 로깅만
             }
         }
+
         return savedRecipe;
     }
 
-    // 레시피 수정
-    public Recipe updateRecipe(Long id, RecipeDTO recipeDTO) {
-        Recipe existingRecipe = getRecipeById(id);
-        existingRecipe.setTitle(recipeDTO.getTitle());
-        existingRecipe.setCategory(RecipeCategory.valueOf(recipeDTO.getCategory()));
-        existingRecipe.setIngredients(recipeDTO.getIngredients());
-        existingRecipe.setAlternativeIngredients(recipeDTO.getAlternativeIngredients());
-        existingRecipe.setCookingSteps(recipeDTO.getCookingSteps());
-        existingRecipe.setMainImageUrl(recipeDTO.getMainImageUrl());
-        existingRecipe.setDifficulty(RecipeDifficulty.valueOf(recipeDTO.getDifficulty()));
-        existingRecipe.setCookingTime(recipeDTO.getCookingTime());
-        existingRecipe.setServings(recipeDTO.getServings());
-        existingRecipe.setPublic(recipeDTO.getIsPublic());
-        return recipeRepository.save(existingRecipe);
+    // 발행 레시피 수정 (null-세이프 업데이트)
+    @Transactional
+    public Recipe updateRecipe(Long id, RecipeDTO dto) {
+        Recipe r = getRecipeById(id);
+
+        if (dto.getTitle() != null) r.setTitle(dto.getTitle());
+        if (dto.getCategory() != null) r.setCategory(RecipeCategory.valueOf(dto.getCategory()));
+        if (dto.getIngredients() != null) r.setIngredients(dto.getIngredients());
+        if (dto.getAlternativeIngredients() != null) r.setAlternativeIngredients(dto.getAlternativeIngredients());
+        if (dto.getHandlingMethods() != null) r.setHandlingMethods(dto.getHandlingMethods());
+        if (dto.getCookingSteps() != null) r.setCookingSteps(dto.getCookingSteps());
+        if (dto.getMainImageUrl() != null) r.setMainImageUrl(dto.getMainImageUrl());
+        if (dto.getDifficulty() != null) r.setDifficulty(RecipeDifficulty.valueOf(dto.getDifficulty()));
+        if (dto.getTags() != null) r.setTags(dto.getTags());
+        if (dto.getCookingTime() != null) r.setCookingTime(dto.getCookingTime());
+        if (dto.getServings() != null) r.setServings(dto.getServings());
+        if (dto.getVideoUrl() != null) r.setVideoUrl(dto.getVideoUrl());
+        if (dto.getRecipeType() != null) r.setRecipeType(RecipeType.valueOf(dto.getRecipeType()));
+        if (dto.getIsPublic() != null) r.setPublic(dto.getIsPublic());
+        // 드래프트 여부는 일반 수정에서 바꾸지 않음 (발행/초안 전환은 전용 API 사용)
+
+        return r; // @Transactional 변경감지
     }
 
     // 레시피 삭제
+    @Transactional
     public void deleteRecipe(Long id) {
-        Recipe recipe = getRecipeById(id);
+        Recipe recipe = recipeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("레시피를 찾을 수 없습니다: " + id));
         recipeRepository.delete(recipe);
     }
 
-    // 레시피 검색
+    // 레시피 검색 (공개 + 초안 제외)
     public List<RecipeSearchResponseDTO> searchRecipesByTitle(String title) {
         List<Recipe> recipes;
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        UserEntity currentUser = userRepository.findByUsername(username);
+        String username = Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
+                .map(a -> a.getName()).orElse(null);
+        UserEntity currentUser = (username != null && !"anonymousUser".equalsIgnoreCase(username))
+                ? userRepository.findByUsername(username)
+                : null;
 
         if (title == null || title.trim().isEmpty()) {
-            // 전체 검색 → 공개 + 임시저장 제외
             recipes = recipeRepository.findByIsPublicTrueAndIsDraftFalse();
         } else {
-            // 제목 검색 → 공개 + 임시저장 제외
             recipes = recipeRepository.findByTitleContainingIgnoreCaseAndIsPublicTrueAndIsDraftFalse(title);
         }
 
@@ -180,26 +188,54 @@ public class  RecipeService {
                     Double avgRatingWrapper = reviewRepository.findAvgRatingByRecipe(recipe.getRecipeId());
                     double avgRating = avgRatingWrapper != null ? avgRatingWrapper : 0.0;
                     int reviewCount = reviewRepository.countByRecipe(recipe);
-                    boolean liked = likeRecipeRepository.existsByUserAndRecipe(currentUser, recipe);
-
+                    boolean liked = (currentUser != null) && likeRecipeRepository.existsByUserAndRecipe(currentUser, recipe);
                     return RecipeSearchResponseDTO.fromEntity(recipe, avgRating, reviewCount, liked);
                 })
                 .collect(Collectors.toList());
     }
 
-    //메인-냉장고 재료 추천 레시피
+    //관리자 - 카테고리별 통계
+    public List<RecipeStatDTO> getCategoryStats() {
+        List<Object[]> raw = recipeRepository.countByCategory();
+
+        Map<RecipeCategory, Long> map = raw.stream()
+                .collect(Collectors.toMap(
+                        obj -> (RecipeCategory) obj[0],
+                        obj -> (Long) obj[1]
+                ));
+
+        List<RecipeStatDTO> result = new ArrayList<>();
+        for (RecipeCategory category : RecipeCategory.values()) {
+            long count = map.getOrDefault(category, 0L);
+            result.add(new RecipeStatDTO(category.name(), count));
+        }
+
+        return result;
+    }
+
+    public List<RecipeStatDTO> getMonthlyCategoryStatsByName(String category) {
+        try {
+            RecipeCategory enumCategory = RecipeCategory.valueOf(category);
+            return recipeRepository.countMonthlyBySpecificCategory(enumCategory).stream()
+                    .map(obj -> new RecipeStatDTO(obj[0].toString(), (Long) obj[1]))
+                    .collect(Collectors.toList());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("유효하지 않은 카테고리입니다: " + category);
+        }
+    }
+
+    // 메인 - 냉장고 재료 추천 레시피(제목 키워드)
     public List<RecipeSearchResponseDTO> getRecommendedRecipesByTitleKeywords(List<String> keywords) {
         if (keywords == null || keywords.isEmpty()) {
             return Collections.emptyList();
         }
 
-        List<Recipe> recipes = recipeRepository.findByIsPublicTrue(); // 공개 레시피 전체 조회
+        List<Recipe> recipes = recipeRepository.findByIsPublicTrue();
 
         List<Recipe> filtered = recipes.stream()
-                .filter(recipe -> keywords.stream()
-                        .anyMatch(keyword -> recipe.getTitle().contains(keyword)))
+                .filter(recipe -> keywords.stream().anyMatch(keyword -> recipe.getTitle().contains(keyword)))
                 .sorted(Comparator.comparingInt(Recipe::getViewCount).reversed())
-                .limit(10) // 예: 최대 10개까지만 추천
+                .limit(10)
                 .collect(Collectors.toList());
 
         return filtered.stream()
@@ -207,7 +243,7 @@ public class  RecipeService {
                 .collect(Collectors.toList());
     }
 
-    //메인-냉장고 재료 추천 레시피 그룹
+    // 메인 - 냉장고 재료 추천 레시피 그룹
     public List<IngredientRecipeGroup> getGroupedRecommendedRecipesByTitle(List<String> keywords) {
         List<Recipe> allRecipes = recipeRepository.findByIsPublicTrue();
 
@@ -228,10 +264,14 @@ public class  RecipeService {
                 .collect(Collectors.toList());
     }
 
-    //예상 사용 재료
+    // 예상 사용 재료 (NPE 가드)
     public List<ExpectedIngredientDTO> getExpectedIngredients(Long recipeId, UserEntity user) {
         Recipe recipe = recipeRepository.findById(recipeId)
                 .orElseThrow(() -> new RuntimeException("레시피를 찾을 수 없습니다."));
+
+        if (recipe.getIngredients() == null || recipe.getIngredients().isBlank()) {
+            return Collections.emptyList();
+        }
 
         JSONArray ingredients = new JSONArray(recipe.getIngredients());
         List<ExpectedIngredientDTO> result = new ArrayList<>();
@@ -245,13 +285,9 @@ public class  RecipeService {
                 List<Fridge> matched = fridgeRepository.findAllByUserAndIngredientNameOrderByCreatedAtAsc(user, name);
 
                 if (!matched.isEmpty()) {
-                    double totalQuantity = matched.stream()
-                            .mapToDouble(Fridge::getQuantity)
-                            .sum();
+                    double totalQuantity = matched.stream().mapToDouble(Fridge::getQuantity).sum();
+                    String unitDetail = matched.get(0).getUnitDetail();
 
-                    String unitDetail = matched.get(0).getUnitDetail(); // 같은 재료는 단위 동일하다고 가정
-
-                    // 가장 오래된 fridgeDate 사용
                     String date = matched.stream()
                             .map(Fridge::getFridgeDate)
                             .filter(Objects::nonNull)
@@ -263,9 +299,9 @@ public class  RecipeService {
 
                     result.add(new ExpectedIngredientDTO(
                             name,
-                            amount,                    // 조리용 필요 수량
-                            String.valueOf(totalQuantity), // 냉장고 보유량 (숫자만)
-                            unitDetail,               // 단위 ("g", "ml", "개")
+                            amount,
+                            String.valueOf(totalQuantity),
+                            unitDetail,
                             date,
                             dateOption
                     ));
@@ -276,11 +312,11 @@ public class  RecipeService {
         return result;
     }
 
-    // RecipeService.java
+    // 대시보드/통계
     public List<RecipeMonthlyStatsDTO> getRecentFourMonthsStats() {
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime fourMonthsAgo = now.minusMonths(3).withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-
+        LocalDateTime fourMonthsAgo = now.minusMonths(3)
+                .withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
         return recipeRepository.findRecentRecipeCounts(fourMonthsAgo);
     }
 
@@ -318,69 +354,17 @@ public class  RecipeService {
         throw new IllegalArgumentException("유효하지 않은 파라미터입니다.");
     }
 
-    //관리자 - 카테고리별 통계
-    public List<RecipeStatDTO> getCategoryStats() {
-        List<Object[]> raw = recipeRepository.countByCategory();
-
-        Map<RecipeCategory, Long> map = raw.stream()
-                .collect(Collectors.toMap(
-                        obj -> (RecipeCategory) obj[0],
-                        obj -> (Long) obj[1]
-                ));
-
-        List<RecipeStatDTO> result = new ArrayList<>();
-        for (RecipeCategory category : RecipeCategory.values()) {
-            long count = map.getOrDefault(category, 0L);
-            result.add(new RecipeStatDTO(category.name(), count));
-        }
-
-        return result;
-    }
-
-    public List<RecipeStatDTO> getMonthlyCategoryStatsByName(String category) {
-        try {
-            RecipeCategory enumCategory = RecipeCategory.valueOf(category);
-            return recipeRepository.countMonthlyBySpecificCategory(enumCategory).stream()
-                    .map(obj -> new RecipeStatDTO(obj[0].toString(), (Long) obj[1]))
-                    .collect(Collectors.toList());
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("유효하지 않은 카테고리입니다: " + category);
-        }
-    }
-
-    //레시피 검색 - 제철 음식 추천
-    public List<RecipeDTO> findRecipesByTitlesContaining(List<String> keywords) {
-        List<Recipe> allPublic = recipeRepository.findByIsPublicTrue();
-
-        List<Recipe> filtered = allPublic.stream()
-                .filter(recipe -> keywords.stream()
-                        .anyMatch(keyword -> recipe.getTitle().toLowerCase().contains(keyword.toLowerCase())))
-                .collect(Collectors.toList());
-
-        return filtered.stream()
-                .map(RecipeDTO::fromEntity)
-                .collect(Collectors.toList());
-    }
-
-
+    // 관리자 삭제
     @Transactional
     public void deleteRecipeByAdmin(Long recipeId, String adminUsername, String reason) {
         Recipe recipe = recipeRepository.findById(recipeId)
                 .orElseThrow(() -> new IllegalArgumentException("레시피가 존재하지 않습니다."));
 
-        // 1. 좋아요 삭제
         likeRecipeRepository.deleteAllByRecipe(recipe);
-
-        // 2. 리뷰 삭제
         reviewRepository.deleteAllByRecipe(recipe);
-
-        //3 추천 삭제
         recommendRecipeRepository.deleteAllByRecipe(recipe);
-
-        // 4. 레시피 삭제
         recipeRepository.delete(recipe);
 
-        // 5. 관리자 로그 기록
         adminLogService.logAdminAction(
                 adminUsername,
                 "DELETE_RECIPE",
@@ -389,21 +373,19 @@ public class  RecipeService {
                 reason
         );
     }
+
+    // 썸네일 생성용 프롬프트
     private String buildPrompt(Recipe recipe) {
         StringBuilder prompt = new StringBuilder();
-
-        // 제목 + 카테고리 (예: 한식 요리인 비빔밥)
         prompt.append(recipe.getCategory()).append(" 요리인 ").append(recipe.getTitle()).append("의 음식 사진입니다. ");
 
-        // 태그 추가 (예: 매콤, 건강식)
         if (recipe.getTags() != null && !recipe.getTags().isBlank()) {
             prompt.append("이 요리는 ").append(recipe.getTags()).append(" 느낌을 줍니다. ");
         }
 
-        // 재료 (5개까지)
         try {
             Gson gson = new Gson();
-            Type type = new TypeToken<List<Map<String, String>>>(){}.getType();
+            Type type = new TypeToken<List<Map<String, String>>>() {}.getType();
             List<Map<String, String>> ingredients = gson.fromJson(recipe.getIngredients(), type);
             if (ingredients != null && !ingredients.isEmpty()) {
                 prompt.append("주요 재료는 ");
@@ -411,50 +393,39 @@ public class  RecipeService {
                         .limit(10)
                         .map(ing -> ing.get("name"))
                         .filter(Objects::nonNull)
-                        .collect(Collectors.joining(", "))
-                ).append("입니다. ");
+                        .collect(Collectors.joining(", "))).append("입니다. ");
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { }
 
-        // 조리 과정 요약
         try {
             Gson gson = new Gson();
-            Type stepType = new TypeToken<List<Map<String, Object>>>(){}.getType();
+            Type stepType = new TypeToken<List<Map<String, Object>>>() {}.getType();
             List<Map<String, Object>> steps = gson.fromJson(recipe.getCookingSteps(), stepType);
             if (steps != null && !steps.isEmpty()) {
                 prompt.append("조리 순서는 다음과 같습니다: ");
                 prompt.append(steps.stream()
                         .map(step -> String.valueOf(step.get("description")))
-                        .collect(Collectors.joining(", "))
-                ).append(". ");
+                        .collect(Collectors.joining(", "))).append(". ");
             }
-        } catch (Exception ignored) {}
-        // 마무리 묘사
-        prompt.append("이 레시피의 썸네일에 사용할 하얀색 배경에 음식 사진을 생성해주세요.");
+        } catch (Exception ignored) { }
 
+        prompt.append("이 레시피의 썸네일에 사용할 하얀색 배경에 음식 사진을 생성해주세요.");
         return prompt.toString();
     }
 
-    //레시피 탭 - 레시피 이거 어때요?
+    // 레시피 탭 - 레시피 이거 어때요?
     @Transactional(readOnly = true)
     public List<RecipeSearchResponseDTO> suggestByType(String type) {
         String regex = switch (type) {
-            // 조건 1: 야식
             case "lateNightMeal" -> "(곱창|닭|치킨|닭발|피자|라면|떡볶이)";
-            // 조건 2: 비오는날
-            case "rainsDay"      -> "(수제비|칼국수|감자탕|전)";
-            // 조건 3: 시원한
-            case "cool"          -> "(초계국수|열무국수|냉면|비빔냉면|모밀)";
-            // 조건 4: 이열치열
-            case "heat"          -> "(삼계탕|닭죽|전골)";
-            // 조건 5: 비건
-            case "vegan"         -> "(비건|채식)";
-            // 조건 6: 초간단
-            case "superSimple"   -> "(계란찜|볶음밥|비빔밥|미역국)";
+            case "rainsDay" -> "(수제비|칼국수|감자탕|전)";
+            case "cool" -> "(초계국수|열무국수|냉면|비빔냉면|모밀)";
+            case "heat" -> "(삼계탕|닭죽|전골)";
+            case "vegan" -> "(비건|채식)";
+            case "superSimple" -> "(계란찜|볶음밥|비빔밥|미역국)";
             default -> throw new IllegalArgumentException("invalid type: " + type);
         };
 
-        // 현재 로그인(없으면 익명 허용)
         String username = Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
                 .map(a -> a.getName())
                 .filter(n -> !"anonymousUser".equalsIgnoreCase(n))
@@ -468,15 +439,31 @@ public class  RecipeService {
             double avgRating = (avgRatingWrapper != null) ? avgRatingWrapper : 0.0;
             int reviewCount = reviewRepository.countByRecipe(recipe);
             boolean liked = (currentUser != null) && likeRecipeRepository.existsByUserAndRecipe(currentUser, recipe);
-
-            // 목록 카드용 가벼운 DTO를 쓰고 싶으면 fromEntity 쪽에서 큰 텍스트 null 처리
             return RecipeSearchResponseDTO.fromEntity(recipe, avgRating, reviewCount, liked);
         }).toList();
     }
 
+    // 내 초안 단건 조회 (컨트롤러에서 사용)
     public RecipeDTO getMyDraftById(Long recipeId, UserEntity user) {
         Recipe recipe = recipeRepository.findByRecipeIdAndUserIdAndIsDraftTrue(recipeId, user.getId())
                 .orElseThrow(() -> new RuntimeException("임시저장 레시피를 찾을 수 없습니다."));
         return RecipeDTO.fromEntity(recipe);
     }
+
+    public List<RecipeDTO> findRecipesByTitlesContaining(List<String> keywords) {
+        // 공개 레시피만 가져온 뒤 제목 포함 여부로 필터
+        List<Recipe> allPublic = recipeRepository.findByIsPublicTrue();
+
+        List<Recipe> filtered = allPublic.stream()
+                .filter(recipe -> {
+                    String title = Optional.ofNullable(recipe.getTitle()).orElse("").toLowerCase();
+                    return keywords.stream().anyMatch(k -> title.contains(k.toLowerCase()));
+                })
+                .collect(Collectors.toList());
+
+        return filtered.stream()
+                .map(RecipeDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
 }

@@ -2,24 +2,28 @@ package com.example.springjwt.recipe;
 
 import com.example.springjwt.dto.CustomUserDetails;
 import com.example.springjwt.search.SearchKeywordService;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/recipes")
 @RequiredArgsConstructor
 public class RecipeController {
 
     private final RecipeService recipeService;
-    private final SearchKeywordService searchKeywordService; // 검색 기록 저장용 서비스 추가
+    private final SearchKeywordService searchKeywordService;
     private final RecipeRepository recipeRepository;
 
     // 레시피 전체 조회
@@ -31,27 +35,29 @@ public class RecipeController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(recipes);
     }
-    
-    // 공개 레시피 조회
+
+    // 공개 레시피 조회 (정렬 옵션)
     @GetMapping("/public")
-    public List<RecipeSearchResponseDTO> getPublicRecipes(@RequestParam(required = false) String sort,@AuthenticationPrincipal UserDetails userDetails) {
+    public List<RecipeSearchResponseDTO> getPublicRecipes(
+            @RequestParam(required = false) String sort,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
         return recipeService.getAllPublicRecipes(sort);
     }
 
-    // 특정 레시피 조회
+    // 특정 레시피 조회 (+조회수 증가)
     @GetMapping("/{id}")
     public ResponseEntity<RecipeDTO> getRecipeById(@PathVariable Long id) {
         Recipe recipe = recipeService.getRecipeById(id);
         return ResponseEntity.ok(RecipeDTO.fromEntity(recipe));
     }
 
-    // 레시피 생성
+    // 레시피 생성(발행)
     @PostMapping
     public ResponseEntity<RecipeResponseDTO> createRecipe(
             @RequestBody RecipeDTO recipeDTO,
-            @AuthenticationPrincipal UserDetails userDetails) {
-
-        System.out.println("Received RecipeDTO: " + recipeDTO);
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
         Recipe recipe = recipeService.createRecipe(recipeDTO, userDetails.getUsername());
         RecipeResponseDTO response = new RecipeResponseDTO(
                 true,
@@ -61,9 +67,12 @@ public class RecipeController {
         return ResponseEntity.ok(response);
     }
 
-    // 레시피 수정
+    // 레시피 수정(발행 상태)
     @PutMapping("/{id}")
-    public ResponseEntity<RecipeDTO> updateRecipe(@PathVariable Long id, @RequestBody RecipeDTO recipeDTO) {
+    public ResponseEntity<RecipeDTO> updateRecipe(
+            @PathVariable Long id,
+            @RequestBody RecipeDTO recipeDTO
+    ) {
         Recipe updatedRecipe = recipeService.updateRecipe(id, recipeDTO);
         return ResponseEntity.ok(RecipeDTO.fromEntity(updatedRecipe));
     }
@@ -78,34 +87,33 @@ public class RecipeController {
     // 레시피 검색 + 검색어 저장
     @GetMapping("/search")
     public ResponseEntity<List<RecipeSearchResponseDTO>> searchRecipes(
-            @RequestParam(required = false) String title
-            ,@AuthenticationPrincipal UserDetails userDetails) {
-
-        System.out.println("search title: " + title);
-
+            @RequestParam(required = false) String title,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
         if (title != null && !title.isBlank()) {
-            searchKeywordService.saveKeyword(title); // 검색어 저장
+            searchKeywordService.saveKeyword(title);
         }
-
         List<RecipeSearchResponseDTO> recipes = recipeService.searchRecipesByTitle(title);
         return ResponseEntity.ok(recipes);
     }
 
-    //메인 - 냉장고 재료 추천 레시피
+    // 메인 - 냉장고 재료 추천 레시피
     @GetMapping("/recommend-by-title")
     public ResponseEntity<List<RecipeSearchResponseDTO>> recommendByTitle(
-            @RequestParam List<String> ingredients) {
+            @RequestParam List<String> ingredients
+    ) {
         List<RecipeSearchResponseDTO> recommended =
                 recipeService.getRecommendedRecipesByTitleKeywords(ingredients);
         return ResponseEntity.ok(recommended);
     }
-    
-    //메인 - 냉장고 재료 추천 레시피 그룹
+
+    // 메인 - 냉장고 재료 추천 레시피 그룹
     @PostMapping("/recommend-grouped")
     public ResponseEntity<List<IngredientRecipeGroup>> recommendGroupedByTitle(
-            @RequestBody List<String> ingredients) {
-
-        List<IngredientRecipeGroup> result = recipeService.getGroupedRecommendedRecipesByTitle(ingredients);
+            @RequestBody List<String> ingredients
+    ) {
+        List<IngredientRecipeGroup> result =
+                recipeService.getGroupedRecommendedRecipesByTitle(ingredients);
         return ResponseEntity.ok(result);
     }
 
@@ -115,19 +123,18 @@ public class RecipeController {
             @PathVariable Long recipeId,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        List<ExpectedIngredientDTO> list = recipeService.getExpectedIngredients(recipeId, userDetails.getUserEntity());
+        List<ExpectedIngredientDTO> list =
+                recipeService.getExpectedIngredients(recipeId, userDetails.getUserEntity());
         return ResponseEntity.ok(list);
     }
 
-    //메인 - 레시피 조회
+    // 메인 - 레시피 조회 TOP6
     @GetMapping("/top/view")
     public ResponseEntity<List<RecipeSearchResponseDTO>> getTopViewedRecipes() {
         List<Recipe> top = recipeRepository.findTop6ByIsPublicTrueOrderByViewCountDesc();
-
         List<RecipeSearchResponseDTO> result = top.stream()
-                .map(recipe -> RecipeSearchResponseDTO.fromEntity(recipe, 0.0, 0, false))
+                .map(r -> RecipeSearchResponseDTO.fromEntity(r, 0.0, 0, false))
                 .collect(Collectors.toList());
-
         return ResponseEntity.ok(result);
     }
 
@@ -138,27 +145,31 @@ public class RecipeController {
         return recipeService.findRecipesByTitlesContaining(seasonalTitles);
     }
 
-    //레시피 탭 - 레시피 이거 어때요?
+    // 레시피 탭 - 레시피 이거 어때요?
     @GetMapping("/suggest")
-    public ResponseEntity<List<RecipeSearchResponseDTO>> suggest(
-            @RequestParam String type
-    ) {
-        // type: lateNightMeal | rainsDay | cool | heat | vegan | superSimple
+    public ResponseEntity<List<RecipeSearchResponseDTO>> suggest(@RequestParam String type) {
         List<RecipeSearchResponseDTO> list = recipeService.suggestByType(type);
         return ResponseEntity.ok(list);
     }
 
+    // ===================== 임시저장(Draft) API =====================
+
     // 내 임시저장 레시피 리스트
     @GetMapping("/drafts")
-    public ResponseEntity<List<RecipeDTO>> getMyDrafts(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        List<Recipe> drafts = recipeRepository.findByUserIdAndIsDraftTrue(userDetails.getUserEntity().getId());
+    public ResponseEntity<List<RecipeDTO>> getMyDrafts(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        List<Recipe> drafts =
+                recipeRepository.findByUserIdAndIsDraftTrueOrderByCreatedAtDesc(
+                        Long.valueOf(userDetails.getUserEntity().getId())
+                );
         List<RecipeDTO> result = drafts.stream()
                 .map(RecipeDTO::fromEntity)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(result);
     }
-    
-    //임시저장 레시피 불러오기
+
+    // 임시저장 단건 조회(소유자 검증)
     @GetMapping("/drafts/{recipeId}")
     public ResponseEntity<RecipeDTO> getMyDraftById(
             @PathVariable Long recipeId,
@@ -166,5 +177,106 @@ public class RecipeController {
     ) {
         RecipeDTO draft = recipeService.getMyDraftById(recipeId, userDetails.getUserEntity());
         return ResponseEntity.ok(draft);
+    }
+
+    // 임시저장 생성
+    @PostMapping("/drafts")
+    public ResponseEntity<RecipeResponseDTO> createDraft(
+            @RequestBody RecipeDTO dto,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        log.info("Draft create DTO: {}", dto); // OK
+        Recipe entity = dto.toEntityDraftSafe();
+        entity.setUser(user.getUserEntity());
+        entity.setDraft(true);
+        entity.setPublic(false);
+        entity.setCreatedAt(LocalDateTime.now());
+
+        Recipe saved = recipeRepository.save(entity);
+        return ResponseEntity.ok(new RecipeResponseDTO(true, "임시저장 생성", saved.getRecipeId()));
+    }
+
+    // 임시저장 수정(작성 중 계속 저장)
+    @PutMapping("/drafts/{id}")
+    public ResponseEntity<RecipeDTO> updateDraft(
+            @PathVariable Long id,
+            @RequestBody RecipeDTO dto,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        Recipe draft = recipeRepository
+                .findByRecipeIdAndUserIdAndIsDraftTrue(id, user.getUserEntity().getId())
+                .orElseThrow(() -> new RuntimeException("임시저장이 없거나 권한 없음."));
+
+        if (StringUtils.hasText(dto.getTitle())) draft.setTitle(dto.getTitle());
+        if (StringUtils.hasText(dto.getCategory())) {
+            try { draft.setCategory(RecipeCategory.valueOf(dto.getCategory())); }
+            catch (Exception e) { log.warn("Invalid category: {}", dto.getCategory()); }
+        }
+        if (StringUtils.hasText(dto.getIngredients())) draft.setIngredients(dto.getIngredients());
+        if (StringUtils.hasText(dto.getAlternativeIngredients())) draft.setAlternativeIngredients(dto.getAlternativeIngredients());
+        if (StringUtils.hasText(dto.getHandlingMethods())) draft.setHandlingMethods(dto.getHandlingMethods());
+        if (StringUtils.hasText(dto.getCookingSteps())) draft.setCookingSteps(dto.getCookingSteps());
+        if (StringUtils.hasText(dto.getMainImageUrl())) draft.setMainImageUrl(dto.getMainImageUrl());
+        if (StringUtils.hasText(dto.getDifficulty())) {
+            try { draft.setDifficulty(RecipeDifficulty.valueOf(dto.getDifficulty())); }
+            catch (Exception e) { log.warn("Invalid difficulty: {}", dto.getDifficulty()); }
+        }
+        if (StringUtils.hasText(dto.getTags())) draft.setTags(dto.getTags());
+        if (dto.getCookingTime() != null) draft.setCookingTime(dto.getCookingTime());
+        if (dto.getServings()    != null) draft.setServings(dto.getServings());
+        if (StringUtils.hasText(dto.getVideoUrl())) draft.setVideoUrl(dto.getVideoUrl());
+        if (StringUtils.hasText(dto.getRecipeType())) {
+            try { draft.setRecipeType(RecipeType.valueOf(dto.getRecipeType())); }
+            catch (Exception e) { log.warn("Invalid recipeType: {}", dto.getRecipeType()); }
+        }
+
+        draft.setDraft(true);
+        draft.setPublic(false);
+
+        Recipe saved = recipeRepository.save(draft);
+        return ResponseEntity.ok(RecipeDTO.fromEntity(saved));
+    }
+
+    // 임시저장 삭제
+    @DeleteMapping("/drafts/{id}")
+    public ResponseEntity<Void> deleteMyDraft(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        Recipe draft = recipeRepository
+                .findByRecipeIdAndUserIdAndIsDraftTrue(id, user.getUserEntity().getId())
+                .orElseThrow(() -> new RuntimeException("임시저장이 없거나 권한 없음."));
+        recipeRepository.delete(draft);
+        return ResponseEntity.noContent().build();
+    }
+
+    // 임시저장을 발행(공개/비공개)으로 전환
+    @PostMapping("/{id}/publish")
+    public ResponseEntity<RecipeDTO> publish(
+            @PathVariable Long id,
+            @RequestBody PublishRequest req,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        Recipe draft = recipeRepository
+                .findByRecipeIdAndUserIdAndIsDraftTrue(id, user.getUserEntity().getId())
+                .orElseThrow(() -> new RuntimeException("임시저장이 없거나 권한 없음."));
+
+        // 필수 검증(필요 시 추가)
+        if (draft.getTitle() == null || draft.getCategory() == null) {
+            throw new IllegalArgumentException("제목/카테고리는 필수입니다.");
+        }
+
+        draft.setDraft(false); // 발행
+        draft.setPublic(Boolean.TRUE.equals(req.getIsPublic()));
+
+        Recipe saved = recipeRepository.save(draft);
+        return ResponseEntity.ok(RecipeDTO.fromEntity(saved));
+    }
+
+    // 발행 요청 바디
+    @Getter
+    @Setter
+    public static class PublishRequest {
+        private Boolean isPublic; // true/false
     }
 }

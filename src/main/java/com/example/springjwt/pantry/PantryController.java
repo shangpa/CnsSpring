@@ -53,4 +53,15 @@ public class PantryController {
         UserEntity user = ((CustomUserDetails) userDetails).getUserEntity();
         return ResponseEntity.ok(pantryService.updatePantry(user, pantryId, request));
     }
+
+    //냉장고삭제
+    @DeleteMapping("/{pantryId}")
+    public ResponseEntity<Void> delete(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long pantryId
+    ) {
+        UserEntity user = ((CustomUserDetails) userDetails).getUserEntity();
+        pantryService.deletePantry(user, pantryId);
+        return ResponseEntity.noContent().build(); // 204 응답
+    }
 }

@@ -102,6 +102,14 @@ public class PantryService {
 
         return toResponse(pantry);
     }
+    // 냉장고 삭제
+    public void deletePantry(UserEntity user, Long pantryId) {
+        Pantry pantry = pantryRepository.findByIdAndUser_Id(pantryId, user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("해당 냉장고가 없습니다."));
+        //todo 냉장고 내부 재료 삭제해야함
+        pantryRepository.delete(pantry);
+    }
+
 
     /* -------------------------
        내부 유틸
@@ -125,4 +133,5 @@ public class PantryService {
                 .createdAt(p.getCreatedAt())
                 .build();
     }
+
 }

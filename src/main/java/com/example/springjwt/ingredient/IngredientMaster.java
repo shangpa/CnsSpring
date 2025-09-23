@@ -22,9 +22,10 @@ public class IngredientMaster {
     @Column(name = "name_ko", length = 100, nullable = false)
     private String nameKo;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @Enumerated(EnumType.STRING)
     @JoinColumn(name = "category_id", foreignKey = @ForeignKey(name = "fk_ing_cat"))
     private IngredientCategory category;
+
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "default_unit_id", foreignKey = @ForeignKey(name = "fk_ing_unit"))

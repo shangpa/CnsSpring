@@ -12,4 +12,5 @@ public interface PantryRepository extends JpaRepository<Pantry, Long> {
     List<Pantry> findAllByUser_IdOrderBySortOrderAscCreatedAtAsc(int userId);
 
     Optional<Pantry> findByIdAndUser_Id(Long pantryId, int userId);
+
 }

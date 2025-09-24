@@ -64,4 +64,5 @@ public class PantryController {
         pantryService.deletePantry(user, pantryId);
         return ResponseEntity.noContent().build(); // 204 응답
     }
+
 }

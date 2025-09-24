@@ -22,11 +22,12 @@ public class IngredientMaster {
     @Column(name = "name_ko", length = 100, nullable = false)
     private String nameKo;
 
+    /** 재료 카테고리 (enum → DB는 문자열) */
     @Enumerated(EnumType.STRING)
-    @JoinColumn(name = "category_id", foreignKey = @ForeignKey(name = "fk_ing_cat"))
+    @Column(name = "category", length = 30, nullable = false)
     private IngredientCategory category;
 
-
+    /** 기본 단위 (예: g, 개 등) */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "default_unit_id", foreignKey = @ForeignKey(name = "fk_ing_unit"))
     private UnitEntity defaultUnit;
@@ -34,5 +35,4 @@ public class IngredientMaster {
     /** 재료 카드 썸네일(일러스트/아이콘) */
     @Column(name = "icon_url", length = 255)
     private String iconUrl;
-
 }

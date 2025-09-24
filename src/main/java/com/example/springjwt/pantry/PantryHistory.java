@@ -43,8 +43,8 @@ public class PantryHistory {
     @Column(nullable = false, length = 10)
     private HistoryAction action;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "stock_id", foreignKey = @ForeignKey(name = "fk_hist_stock"))
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "stock_id", nullable = true)
     private PantryStock stock;
 
     @Column(name = "ref_type", length = 30)

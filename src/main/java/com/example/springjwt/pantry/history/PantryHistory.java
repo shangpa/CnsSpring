@@ -1,7 +1,9 @@
-package com.example.springjwt.pantry;
+package com.example.springjwt.pantry.history;
 
 import com.example.springjwt.ingredient.IngredientMaster;
 import com.example.springjwt.ingredient.UnitEntity;
+import com.example.springjwt.pantry.Pantry;
+import com.example.springjwt.pantry.PantryStock;
 import jakarta.persistence.*;
 import lombok.*;
 

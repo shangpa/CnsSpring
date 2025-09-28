@@ -55,7 +55,7 @@ public class PantryStockController {
         StorageLocation storage = parseStorage(req.getStorage());
         StockSource source = parseSource(req.getSource());
         LocalDate purchasedAt = parseDateOrNull(req.getPurchasedAt());
-        LocalDate expiresAt   = parseDateOrNull(req.getExpiresAt());
+        LocalDate expiresAt = parseDateOrNull(req.getExpiresAt());
 
         PantryStock saved = pantryStockRepository.save(
                 PantryStock.builder()
@@ -116,7 +116,7 @@ public class PantryStockController {
                         .ingredientId(s.getIngredient() != null ? s.getIngredient().getId() : null)
                         .unitId(s.getUnit() != null ? s.getUnit().getId() : null)
                         .purchasedAt(s.getPurchasedAt() == null ? null : s.getPurchasedAt().toString())
-                        .expiresAt(s.getExpiresAt()   == null ? null : s.getExpiresAt().toString())
+                        .expiresAt(s.getExpiresAt() == null ? null : s.getExpiresAt().toString())
 
                         // 기존 표시용
                         .ingredientName(safe(s.getIngredient() != null ? s.getIngredient().getNameKo() : null))
@@ -182,7 +182,9 @@ public class PantryStockController {
         }
     }
 
-    private String safe(String v) { return v == null ? "" : v; }
+    private String safe(String v) {
+        return v == null ? "" : v;
+    }
 
     @GetMapping("/{stockId}")
     @Transactional(readOnly = true)
@@ -235,10 +237,18 @@ public class PantryStockController {
             throw new IllegalArgumentException("해당 냉장고의 재고가 아닙니다.");
         }
 
+        // ----- 변경 전 수량 백업 -----
+        var oldQty = s.getQuantity();
+
         // quantity
         if (req.getQuantity() != null) {
-            try { s.setQuantity(new java.math.BigDecimal(req.getQuantity().trim())); }
-            catch (Exception e) { throw new IllegalArgumentException("수량 형식이 잘못되었습니다: " + req.getQuantity()); }
+            try {
+                var newVal = new java.math.BigDecimal(req.getQuantity().trim())
+                        .setScale(3, java.math.RoundingMode.HALF_UP); // 스케일 일관화
+                s.setQuantity(newVal);
+            } catch (Exception e) {
+                throw new IllegalArgumentException("수량 형식이 잘못되었습니다: " + req.getQuantity());
+            }
         }
 
         // storage
@@ -247,23 +257,41 @@ public class PantryStockController {
         }
 
         // ----- 날짜(배타 로직) -----
-        // 1) expiresAt가 값으로 오면, 유통기한 설정 + 구매일자 비우기
         if (req.getExpiresAt() != null) {
             if (req.getExpiresAt().isBlank()) {
                 s.setExpiresAt(null);
             } else {
                 s.setExpiresAt(java.time.LocalDate.parse(req.getExpiresAt()));
-                s.setPurchasedAt(null); // ★ 배타성 보장
+                s.setPurchasedAt(null);
             }
         }
-
-        // 2) purchasedAt이 값으로 오면, 구매일자 설정 + 유통기한 비우기
         if (req.getPurchasedAt() != null) {
             if (req.getPurchasedAt().isBlank()) {
                 s.setPurchasedAt(null);
             } else {
                 s.setPurchasedAt(java.time.LocalDate.parse(req.getPurchasedAt()));
-                s.setExpiresAt(null); // ★ 배타성 보장
+                s.setExpiresAt(null);
+            }
+        }
+
+        // ----- 수량 변경 히스토리 (ADJUST ±delta) -----
+        var newQty = s.getQuantity();
+        if (req.getQuantity() != null && newQty != null && oldQty != null) {
+            var delta = newQty.subtract(oldQty); // +면 증가, -면 감소
+            if (delta.compareTo(java.math.BigDecimal.ZERO) != 0) {
+                historyRepository.save(
+                        PantryHistory.builder()
+                                .pantry(s.getPantry())
+                                .ingredient(s.getIngredient())
+                                .unit(s.getUnit())
+                                .changeQty(delta)                 // 부호 포함
+                                .action(HistoryAction.ADJUST)
+                                .stock(s)
+                                .refType("PANTRY_STOCK")
+                                .refId(s.getId())
+                                .note("수정에 따른 수량 조정")
+                                .build()
+                );
             }
         }
 
@@ -288,12 +316,33 @@ public class PantryStockController {
             throw new IllegalArgumentException("해당 냉장고의 재고가 아닙니다.");
         }
 
-        pantryStockRepository.delete(s); // <- 여기서 끝 (히스토리는 DB가 SET NULL)
+        // ----- 폐기 히스토리 (DISCARD -fullQty) -----
+        var qty = s.getQuantity() != null ? s.getQuantity() : java.math.BigDecimal.ZERO;
+        if (qty.compareTo(java.math.BigDecimal.ZERO) > 0) {
+            historyRepository.save(
+                    PantryHistory.builder()
+                            .pantry(s.getPantry())
+                            .ingredient(s.getIngredient())
+                            .unit(s.getUnit())
+                            // ✅ 절대값(양수)으로 저장
+                            .changeQty(qty.abs())
+                            .action(HistoryAction.DISCARD)   // UI에서 - 빨강으로 표시
+                            .stock(s)
+                            .refType("PANTRY_STOCK")
+                            .refId(s.getId())
+                            .note("재고 삭제에 따른 폐기")
+                            .build()
+            );
+        }
+
+        pantryStockRepository.delete(s);
         return ResponseEntity.noContent().build();
     }
 
     @Data
-    static class IdsRequest { private List<Long> ids; }
+    static class IdsRequest {
+        private List<Long> ids;
+    }
 
     @PostMapping("/delete")
     @Transactional
@@ -313,13 +362,26 @@ public class PantryStockController {
         var stocks = pantryStockRepository.findAllById(req.getIds());
         // 보안: 다른 냉장고 소속 재고가 섞여 있지 않은지 확인
         for (var s : stocks) {
-            if (!s.getPantry().getId().equals(pantry.getId())) {
-                throw new IllegalArgumentException("다른 냉장고의 재고가 포함되어 있습니다. id=" + s.getId());
+            var qty = s.getQuantity() != null ? s.getQuantity() : java.math.BigDecimal.ZERO;
+            if (qty.compareTo(java.math.BigDecimal.ZERO) > 0) {
+                historyRepository.save(
+                        PantryHistory.builder()
+                                .pantry(s.getPantry())
+                                .ingredient(s.getIngredient())
+                                .unit(s.getUnit())
+                                // ✅ 절대값(양수)으로 저장
+                                .changeQty(qty.abs())
+                                .action(HistoryAction.DISCARD)
+                                .stock(s)
+                                .refType("PANTRY_STOCK")
+                                .refId(s.getId())
+                                .note("일괄 삭제에 따른 폐기")
+                                .build()
+                );
             }
         }
+
         pantryStockRepository.deleteAll(stocks);
         return ResponseEntity.noContent().build();
     }
-
-
 }

@@ -1,4 +1,4 @@
-package com.example.springjwt.pantry;
+package com.example.springjwt.pantry.history;
 
 public enum HistoryAction {
     ADD,        // 입고

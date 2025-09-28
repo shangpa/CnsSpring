@@ -1,4 +1,4 @@
-package com.example.springjwt.pantry;
+package com.example.springjwt.pantry.history;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;

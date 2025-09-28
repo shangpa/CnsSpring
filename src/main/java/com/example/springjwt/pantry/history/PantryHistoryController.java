@@ -1,4 +1,4 @@
-package com.example.springjwt.pantry;
+package com.example.springjwt.pantry.history;
 
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.dto.CustomUserDetails;

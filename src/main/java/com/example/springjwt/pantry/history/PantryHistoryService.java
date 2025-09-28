@@ -1,6 +1,8 @@
-package com.example.springjwt.pantry;
+package com.example.springjwt.pantry.history;
 
 import com.example.springjwt.User.UserEntity;
+import com.example.springjwt.pantry.Pantry;
+import com.example.springjwt.pantry.PantryRepository;
 import com.example.springjwt.pantry.dto.PantryHistoryDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

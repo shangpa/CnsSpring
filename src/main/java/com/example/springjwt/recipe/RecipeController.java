@@ -247,9 +247,9 @@ public class RecipeController {
             List<RecipeIngredient> ingList = dto.getIngredients().stream()
                     .map(riDto -> RecipeIngredient.builder()
                             .recipe(draft)
-                            .ingredient(ingredientMasterRepository.findById(riDto.getIngredientId())
-                                    .orElseThrow(() -> new IllegalArgumentException("재료 없음: " + riDto.getIngredientId())))
-                            .quantity(riDto.getQuantity())
+                            .ingredient(ingredientMasterRepository.findById(riDto.getId())
+                                    .orElseThrow(() -> new IllegalArgumentException("재료 없음: " + riDto.getId())))
+                            .quantity(riDto.getAmount())
                             .build())
                     .toList();
 

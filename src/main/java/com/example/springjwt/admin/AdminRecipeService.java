@@ -85,7 +85,6 @@ public class AdminRecipeService {
                                 .map(ri -> new RecipeIngredientDTO(
                                         ri.getIngredient().getId(),
                                         ri.getIngredient().getNameKo(),
-                                        ri.getIngredient().getDefaultUnit().getName(),
                                         ri.getQuantity()
                                 ))
                                 .toList()

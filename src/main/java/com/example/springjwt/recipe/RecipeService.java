@@ -105,11 +105,28 @@ public class RecipeService {
         if (Boolean.TRUE.equals(dto.getIsDraft())) {
             throw new IllegalArgumentException("초안은 /api/recipes/drafts 엔드포인트를 사용하세요.");
         }
+        System.out.println("📥 createRecipe 호출됨");
+        System.out.println("username = " + username);
+        System.out.println("dto.title = " + dto.getTitle());
+        System.out.println("dto.category = " + dto.getCategory());
+        System.out.println("dto.difficulty = " + dto.getDifficulty());
+        System.out.println("dto.tags = " + dto.getTags());
+        System.out.println("dto.cookingTime = " + dto.getCookingTime());
+        System.out.println("dto.servings = " + dto.getServings());
+        System.out.println("dto.isPublic = " + dto.getIsPublic());
+        System.out.println("dto.isDraft = " + dto.getIsDraft());
+        System.out.println("dto.mainImageUrl = " + dto.getMainImageUrl());
+        System.out.println("dto.videoUrl = " + dto.getVideoUrl());
+        System.out.println("dto.ingredients = " + dto.getIngredients());
+        System.out.println("dto.alternativeIngredients = " + dto.getAlternativeIngredients());
+        System.out.println("dto.handlingMethods = " + dto.getHandlingMethods());
+        System.out.println("dto.cookingSteps = " + dto.getCookingSteps());
 
         UserEntity user = userRepository.findByUsername(username);
 
         // 발행용 엔티티
         Recipe recipe = dto.toEntity(); // dto는 래퍼 타입 + 기본값 포함
+
         recipe.setUser(user);
         recipe.setDraft(false);
         recipe.setPublic(Boolean.TRUE.equals(dto.getIsPublic()));
@@ -122,9 +139,9 @@ public class RecipeService {
             List<RecipeIngredient> ingList = dto.getIngredients().stream()
                     .map(riDto -> RecipeIngredient.builder()
                             .recipe(savedRecipe)
-                            .ingredient(ingredientMasterRepository.findById(riDto.getIngredientId())
-                                    .orElseThrow(() -> new IllegalArgumentException("재료 없음: " + riDto.getIngredientId())))
-                            .quantity(riDto.getQuantity())
+                            .ingredient(ingredientMasterRepository.findById(riDto.getId())
+                                    .orElseThrow(() -> new IllegalArgumentException("재료 없음: " + riDto.getId())))
+                            .quantity(riDto.getAmount())
                             .build())
                     .toList();
 
@@ -162,9 +179,9 @@ public class RecipeService {
             List<RecipeIngredient> ingList = dto.getIngredients().stream()
                     .map(riDto -> RecipeIngredient.builder()
                             .recipe(r)
-                            .ingredient(ingredientMasterRepository.findById(riDto.getIngredientId())
-                                    .orElseThrow(() -> new IllegalArgumentException("재료 없음: " + riDto.getIngredientId())))
-                            .quantity(riDto.getQuantity())
+                            .ingredient(ingredientMasterRepository.findById(riDto.getId())
+                                    .orElseThrow(() -> new IllegalArgumentException("재료 없음: " + riDto.getId())))
+                            .quantity(riDto.getAmount())
                             .build())
                     .toList();
             r.getIngredients().clear();

@@ -1,9 +1,11 @@
 package com.example.springjwt.recipe;
 
+import com.example.springjwt.recipeingredient.RecipeIngredientDTO;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter @Setter
 @NoArgsConstructor
@@ -13,7 +15,7 @@ public class RecipeDTO {
     private Long recipeId;
     private String title;
     private String category;                 // RecipeCategory.name()
-    private String ingredients;              // JSON
+    private List<RecipeIngredientDTO> ingredients;             // JSON
     private String alternativeIngredients;   // JSON
     private String handlingMethods;          // JSON
     private String cookingSteps;             // JSON
@@ -44,7 +46,11 @@ public class RecipeDTO {
                 .recipeId(recipe.getRecipeId())
                 .title(recipe.getTitle())
                 .category(recipe.getCategory() != null ? recipe.getCategory().name() : null)
-                .ingredients(recipe.getIngredients())
+                .ingredients(recipe.getIngredients() != null ?
+                        recipe.getIngredients().stream()
+                                .map(RecipeIngredientDTO::fromEntity)
+                                .toList()
+                        : null)
                 .alternativeIngredients(recipe.getAlternativeIngredients())
                 .handlingMethods(recipe.getHandlingMethods())
                 .cookingSteps(recipe.getCookingSteps())
@@ -66,7 +72,6 @@ public class RecipeDTO {
     public Recipe toEntity() {
         Recipe.RecipeBuilder b = Recipe.builder()
                 .title(this.title)
-                .ingredients(this.ingredients)
                 .alternativeIngredients(this.alternativeIngredients)
                 .handlingMethods(this.handlingMethods)
                 .cookingSteps(this.cookingSteps)
@@ -101,7 +106,6 @@ public class RecipeDTO {
         if (this.category != null && !this.category.isBlank()) {
             try { r.setCategory(RecipeCategory.valueOf(this.category)); } catch (Exception ignored) {}
         }
-        if (this.ingredients != null) r.setIngredients(this.ingredients);
         if (this.alternativeIngredients != null) r.setAlternativeIngredients(this.alternativeIngredients);
         if (this.handlingMethods != null) r.setHandlingMethods(this.handlingMethods);
         if (this.cookingSteps != null) r.setCookingSteps(this.cookingSteps);

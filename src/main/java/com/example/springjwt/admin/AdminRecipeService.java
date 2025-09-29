@@ -9,6 +9,7 @@ import com.example.springjwt.board.BoardRepository;
 import com.example.springjwt.recipe.Recipe;
 import com.example.springjwt.recipe.RecipeRepository;
 import com.example.springjwt.recipe.RecipeSearchResponseDTO;
+import com.example.springjwt.recipeingredient.RecipeIngredientDTO;
 import com.example.springjwt.review.Recipe.ReviewRepository;
 import com.example.springjwt.tradepost.TradePostRepository;
 import lombok.RequiredArgsConstructor;
@@ -78,7 +79,18 @@ public class AdminRecipeService {
                 .username(recipe.getUser().getUsername())
                 .title(recipe.getTitle())
                 .category(recipe.getCategory())
-                .ingredients(recipe.getIngredients())
+                .ingredients(
+                        recipe.getIngredients() != null
+                                ? recipe.getIngredients().stream()
+                                .map(ri -> new RecipeIngredientDTO(
+                                        ri.getIngredient().getId(),
+                                        ri.getIngredient().getNameKo(),
+                                        ri.getIngredient().getDefaultUnit().getName(),
+                                        ri.getQuantity()
+                                ))
+                                .toList()
+                                : null
+                )
                 .alternativeIngredients(recipe.getAlternativeIngredients())
                 .handlingMethods(recipe.getHandlingMethods())
                 .cookingSteps(recipe.getCookingSteps())

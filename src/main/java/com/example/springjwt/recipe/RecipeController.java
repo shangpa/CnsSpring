@@ -1,6 +1,10 @@
 package com.example.springjwt.recipe;
 
 import com.example.springjwt.dto.CustomUserDetails;
+import com.example.springjwt.ingredient.IngredientMaster;
+import com.example.springjwt.ingredient.IngredientMasterRepository;
+import com.example.springjwt.recipeingredient.RecipeIngredient;
+import com.example.springjwt.recipeingredient.RecipeIngredientRepository;
 import com.example.springjwt.search.SearchKeywordService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +32,7 @@ public class RecipeController {
     private final SearchKeywordService searchKeywordService;
     private final RecipeRepository recipeRepository;
     private final RecipeSearchService recipeSearchService;
+    private final IngredientMasterRepository ingredientMasterRepository;
 
     // 레시피 전체 조회
     @GetMapping
@@ -238,7 +243,20 @@ public class RecipeController {
             try { draft.setCategory(RecipeCategory.valueOf(dto.getCategory())); }
             catch (Exception e) { log.warn("Invalid category: {}", dto.getCategory()); }
         }
-        if (StringUtils.hasText(dto.getIngredients())) draft.setIngredients(dto.getIngredients());
+        if (dto.getIngredients() != null) {
+            List<RecipeIngredient> ingList = dto.getIngredients().stream()
+                    .map(riDto -> RecipeIngredient.builder()
+                            .recipe(draft)
+                            .ingredient(ingredientMasterRepository.findById(riDto.getIngredientId())
+                                    .orElseThrow(() -> new IllegalArgumentException("재료 없음: " + riDto.getIngredientId())))
+                            .quantity(riDto.getQuantity())
+                            .build())
+                    .toList();
+
+            draft.getIngredients().clear();
+            draft.getIngredients().addAll(ingList);
+        }
+
         if (StringUtils.hasText(dto.getAlternativeIngredients())) draft.setAlternativeIngredients(dto.getAlternativeIngredients());
         if (StringUtils.hasText(dto.getHandlingMethods())) draft.setHandlingMethods(dto.getHandlingMethods());
         if (StringUtils.hasText(dto.getCookingSteps())) draft.setCookingSteps(dto.getCookingSteps());

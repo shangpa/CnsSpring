@@ -24,11 +24,13 @@ public class RecipeIngredientCacheInitializer {
         List<String> allIngredientNames = new ArrayList<>();
 
         for (Recipe recipe : recipes) {
-            String json = recipe.getIngredients();
-            List<String> names = ingredientParser.extractNames(json);
-            allIngredientNames.addAll(names);
+            if (recipe.getIngredients() != null) {
+                List<String> names = recipe.getIngredients().stream()
+                        .map(ri -> ri.getIngredient().getNameKo())
+                        .toList();
+                allIngredientNames.addAll(names);
+            }
         }
-
         ingredientNameCache.initialize(allIngredientNames);
         System.out.println("✅ 재료 이름 캐시 초기화 완료: 총 " + allIngredientNames.size() + "개");
     }

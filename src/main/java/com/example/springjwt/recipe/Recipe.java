@@ -1,10 +1,13 @@
 package com.example.springjwt.recipe;
 
 import com.example.springjwt.User.UserEntity;
+import com.example.springjwt.recipeingredient.RecipeIngredient;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "recipe")
@@ -28,9 +31,14 @@ public class Recipe {
     @Enumerated(EnumType.STRING)
     private RecipeCategory category; // 카테고리 (ENUM)
 
+    /* 재료 수정중
     @Lob
     @Column(columnDefinition = "TEXT")
     private String ingredients; // JSON 형식의 재료
+    */
+    @OneToMany(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RecipeIngredient> ingredients = new ArrayList<>();
+
 
     @Lob
     @Column(columnDefinition = "TEXT")
@@ -68,10 +76,6 @@ public class Recipe {
 
     private int likePointStep = 0;   // 좋아요 10개 단위 포인트 지급 추적
     private int scrapPointStep = 0;  // 찜 10개 단위 포인트 지급 추적
-
-    public String getIngredients() {
-        return this.ingredients;
-    }
 
 
     @Column(nullable = false)

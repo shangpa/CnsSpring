@@ -9,6 +9,7 @@ import com.example.springjwt.api.OpenAiService;
 import com.example.springjwt.api.vision.IngredientParser;
 import com.example.springjwt.fridge.Fridge;
 import com.example.springjwt.fridge.FridgeRepository;
+import com.example.springjwt.ingredient.IngredientMasterRepository;
 import com.example.springjwt.mypage.LikeRecipeRepository;
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
@@ -16,6 +17,8 @@ import com.example.springjwt.mypage.RecommendRecipeRepository;
 import com.example.springjwt.point.PointActionType;
 import com.example.springjwt.point.PointService;
 import com.example.springjwt.recipe.cashe.IngredientNameCache;
+import com.example.springjwt.recipeingredient.RecipeIngredient;
+import com.example.springjwt.recipeingredient.RecipeIngredientRepository;
 import com.example.springjwt.review.Recipe.ReviewRepository;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -47,6 +50,8 @@ public class RecipeService {
     private final IngredientNameCache ingredientNameCache;
     private final IngredientParser ingredientParser;
     private final OpenAiService openAiService;
+    private final IngredientMasterRepository ingredientMasterRepository;
+    private final RecipeIngredientRepository recipeIngredientRepository;
 
     private static final int SUGGEST_LIMIT = 3;
 
@@ -113,10 +118,19 @@ public class RecipeService {
 
         Recipe savedRecipe = recipeRepository.save(recipe);
 
-        // 재료명 캐시에 추가 (NPE 가드)
-        if (dto.getIngredients() != null) {
-            List<String> ingredientNames = ingredientParser.extractNames(dto.getIngredients());
-            ingredientNameCache.addFromNames(ingredientNames);
+        if (dto.getIngredients() != null && !dto.getIngredients().isEmpty()) {
+            List<RecipeIngredient> ingList = dto.getIngredients().stream()
+                    .map(riDto -> RecipeIngredient.builder()
+                            .recipe(savedRecipe)
+                            .ingredient(ingredientMasterRepository.findById(riDto.getIngredientId())
+                                    .orElseThrow(() -> new IllegalArgumentException("재료 없음: " + riDto.getIngredientId())))
+                            .quantity(riDto.getQuantity())
+                            .build())
+                    .toList();
+
+            // recipe에 세팅 + 영속화
+            savedRecipe.setIngredients(ingList);
+            recipeIngredientRepository.saveAll(ingList);
         }
 
         // 썸네일 자동 생성 (메인이미지 없고, 조리순서가 있을 때)
@@ -143,7 +157,20 @@ public class RecipeService {
 
         if (dto.getTitle() != null) r.setTitle(dto.getTitle());
         if (dto.getCategory() != null) r.setCategory(RecipeCategory.valueOf(dto.getCategory()));
-        if (dto.getIngredients() != null) r.setIngredients(dto.getIngredients());
+        if (dto.getIngredients() != null) {
+            // 기존 재료 삭제 후 새로 교체
+            List<RecipeIngredient> ingList = dto.getIngredients().stream()
+                    .map(riDto -> RecipeIngredient.builder()
+                            .recipe(r)
+                            .ingredient(ingredientMasterRepository.findById(riDto.getIngredientId())
+                                    .orElseThrow(() -> new IllegalArgumentException("재료 없음: " + riDto.getIngredientId())))
+                            .quantity(riDto.getQuantity())
+                            .build())
+                    .toList();
+            r.getIngredients().clear();
+            r.getIngredients().addAll(ingList);
+        }
+
         if (dto.getAlternativeIngredients() != null) r.setAlternativeIngredients(dto.getAlternativeIngredients());
         if (dto.getHandlingMethods() != null) r.setHandlingMethods(dto.getHandlingMethods());
         if (dto.getCookingSteps() != null) r.setCookingSteps(dto.getCookingSteps());
@@ -265,52 +292,48 @@ public class RecipeService {
     }
 
     // 예상 사용 재료 (NPE 가드)
+    // 예상 사용 재료 (냉장고 매칭)
     public List<ExpectedIngredientDTO> getExpectedIngredients(Long recipeId, UserEntity user) {
         Recipe recipe = recipeRepository.findById(recipeId)
                 .orElseThrow(() -> new RuntimeException("레시피를 찾을 수 없습니다."));
 
-        if (recipe.getIngredients() == null || recipe.getIngredients().isBlank()) {
+        if (recipe.getIngredients() == null || recipe.getIngredients().isEmpty()) {
             return Collections.emptyList();
         }
 
-        JSONArray ingredients = new JSONArray(recipe.getIngredients());
         List<ExpectedIngredientDTO> result = new ArrayList<>();
 
-        for (int i = 0; i < ingredients.length(); i++) {
-            JSONObject item = ingredients.getJSONObject(i);
-            String name = item.optString("name", "").trim();
-            String amount = item.optString("amount", "").trim();
+        for (RecipeIngredient ri : recipe.getIngredients()) {
+            String name = ri.getIngredient().getNameKo();
+            Double amount = ri.getQuantity();
+            String unitDetail = ri.getIngredient().getDefaultUnit().getName();
 
-            if (!name.isEmpty()) {
-                List<Fridge> matched = fridgeRepository.findAllByUserAndIngredientNameOrderByCreatedAtAsc(user, name);
+            List<Fridge> matched = fridgeRepository.findAllByUserAndIngredientNameOrderByCreatedAtAsc(user, name);
 
-                if (!matched.isEmpty()) {
-                    double totalQuantity = matched.stream().mapToDouble(Fridge::getQuantity).sum();
-                    String unitDetail = matched.get(0).getUnitDetail();
+            if (!matched.isEmpty()) {
+                double totalQuantity = matched.stream().mapToDouble(Fridge::getQuantity).sum();
+                String fridgeDate = matched.stream()
+                        .map(Fridge::getFridgeDate)
+                        .filter(Objects::nonNull)
+                        .map(Object::toString)
+                        .findFirst()
+                        .orElse("날짜 없음");
+                String dateOption = matched.get(0).getDateOption();
 
-                    String date = matched.stream()
-                            .map(Fridge::getFridgeDate)
-                            .filter(Objects::nonNull)
-                            .map(Object::toString)
-                            .findFirst()
-                            .orElse("날짜 없음");
-
-                    String dateOption = matched.get(0).getDateOption();
-
-                    result.add(new ExpectedIngredientDTO(
-                            name,
-                            amount,
-                            String.valueOf(totalQuantity),
-                            unitDetail,
-                            date,
-                            dateOption
-                    ));
-                }
+                result.add(new ExpectedIngredientDTO(
+                        name,
+                        String.valueOf(amount),
+                        String.valueOf(totalQuantity),
+                        unitDetail,
+                        fridgeDate,
+                        dateOption
+                ));
             }
         }
 
         return result;
     }
+
 
     // 대시보드/통계
     public List<RecipeMonthlyStatsDTO> getRecentFourMonthsStats() {
@@ -383,19 +406,15 @@ public class RecipeService {
             prompt.append("이 요리는 ").append(recipe.getTags()).append(" 느낌을 줍니다. ");
         }
 
-        try {
-            Gson gson = new Gson();
-            Type type = new TypeToken<List<Map<String, String>>>() {}.getType();
-            List<Map<String, String>> ingredients = gson.fromJson(recipe.getIngredients(), type);
-            if (ingredients != null && !ingredients.isEmpty()) {
-                prompt.append("주요 재료는 ");
-                prompt.append(ingredients.stream()
-                        .limit(10)
-                        .map(ing -> ing.get("name"))
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.joining(", "))).append("입니다. ");
-            }
-        } catch (Exception ignored) { }
+        if (recipe.getIngredients() != null && !recipe.getIngredients().isEmpty()) {
+            prompt.append("주요 재료는 ");
+            prompt.append(recipe.getIngredients().stream()
+                            .map(ri -> ri.getIngredient().getNameKo())
+                            .filter(Objects::nonNull)
+                            .limit(10)
+                            .collect(Collectors.joining(", ")))
+                    .append("입니다. ");
+        }
 
         try {
             Gson gson = new Gson();

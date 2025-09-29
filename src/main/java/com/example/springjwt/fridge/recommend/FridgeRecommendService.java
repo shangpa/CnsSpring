@@ -23,7 +23,7 @@ public class FridgeRecommendService {
         List<RecipeRecommendResponseDTO> result = new ArrayList<>();
 
         for (Recipe recipe : allRecipes) {
-            if (isRecipeMatch(recipe.getIngredients(), selectedIngredients)) {
+            if (isRecipeMatch(recipe, selectedIngredients)) {
                 int likeCount = likeRecipeRepository.countByRecipe(recipe);
                 RecipeRecommendResponseDTO dto = RecipeRecommendResponseDTO.builder()
                         .recipeId(recipe.getRecipeId())
@@ -45,24 +45,15 @@ public class FridgeRecommendService {
         return result;
     }
 
-    private boolean isRecipeMatch(String ingredientsJson, List<String> selectedIngredients) {
-        try {
-            JsonNode ingredientsNode = objectMapper.readTree(ingredientsJson);
-            List<String> ingredientNames = new ArrayList<>();
+    private boolean isRecipeMatch(Recipe recipe, List<String> selectedIngredients) {
+        if (recipe.getIngredients() == null) return false;
 
-            for (JsonNode ingredient : ingredientsNode) {
-                String name = ingredient.get("name").asText().replaceAll("\\s+", ""); // 공백 제거
-                ingredientNames.add(name);
-            }
+        List<String> ingredientNames = recipe.getIngredients().stream()
+                .map(ri -> ri.getIngredient().getNameKo().replaceAll("\\s+", ""))
+                .toList();
 
-            // 선택한 재료도 공백 제거해서 비교
-            return selectedIngredients.stream()
-                    .map(name -> name.replaceAll("\\s+", "")) // 공백 제거
-                    .allMatch(ingredientNames::contains);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+        return selectedIngredients.stream()
+                .map(name -> name.replaceAll("\\s+", ""))
+                .allMatch(ingredientNames::contains);
     }
 }

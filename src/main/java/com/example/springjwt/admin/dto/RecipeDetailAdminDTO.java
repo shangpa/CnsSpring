@@ -2,6 +2,7 @@ package com.example.springjwt.admin.dto;
 
 import com.example.springjwt.recipe.RecipeDifficulty;
 import com.example.springjwt.recipe.RecipeCategory;
+import com.example.springjwt.recipeingredient.RecipeIngredientDTO;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -15,7 +16,7 @@ public class RecipeDetailAdminDTO {
     private String username;
     private String title;
     private RecipeCategory category;
-    private String ingredients;
+    private List<RecipeIngredientDTO> ingredients;
     private String alternativeIngredients;
     private String handlingMethods;
     private String cookingSteps;

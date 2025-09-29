@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
         indexes = {
                 @Index(name = "ix_stock_pantry", columnList = "pantry_id"),
                 @Index(name = "ix_stock_pantry_ing", columnList = "pantry_id, ingredient_id"),
-                @Index(name = "ix_stock_expires", columnList = "expires_at")
+                @Index(name = "ix_stock_expires", columnList = "expiresAt")
         }
 )
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder

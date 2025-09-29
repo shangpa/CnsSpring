@@ -1,11 +1,13 @@
 package com.example.springjwt.recipe.cashe;
 
 import com.example.springjwt.api.vision.IngredientParser;
+import com.example.springjwt.ingredient.IngredientMasterRepository;
 import com.example.springjwt.recipe.Recipe;
 import com.example.springjwt.recipe.RecipeRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import com.example.springjwt.ingredient.IngredientMaster;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,24 +16,18 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RecipeIngredientCacheInitializer {
 
-    private final RecipeRepository recipeRepository;
-    private final IngredientParser ingredientParser;
+    private final IngredientMasterRepository ingredientMasterRepository;
     private final IngredientNameCache ingredientNameCache;
 
     @PostConstruct
     public void init() {
-        List<Recipe> recipes = recipeRepository.findAll();
-        List<String> allIngredientNames = new ArrayList<>();
+        // 마스터 테이블에서 모든 재료명 가져오기
+        List<String> allIngredientNames = ingredientMasterRepository.findAll().stream()
+                .map(IngredientMaster::getNameKo)
+                .toList();
 
-        for (Recipe recipe : recipes) {
-            if (recipe.getIngredients() != null) {
-                List<String> names = recipe.getIngredients().stream()
-                        .map(ri -> ri.getIngredient().getNameKo())
-                        .toList();
-                allIngredientNames.addAll(names);
-            }
-        }
         ingredientNameCache.initialize(allIngredientNames);
         System.out.println("✅ 재료 이름 캐시 초기화 완료: 총 " + allIngredientNames.size() + "개");
     }
 }
+

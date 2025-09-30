@@ -68,6 +68,9 @@ public class SecurityConfig {
                 .httpBasic(basic -> basic.disable())
                 .authorizeHttpRequests(auth -> auth
                         // ✅ 정적 리소스(동영상/썸네일) 공개
+                        .requestMatchers("/ingredient-test.html").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/ingredients/all").permitAll()
+                        .requestMatchers("/icons/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
 
                         // ✅ 숏폼 보기용 GET API 공개 (비로그인 시청 허용)

@@ -43,6 +43,16 @@ public class PantryController {
         return ResponseEntity.ok(pantryService.listPantries(user));
     }
 
+    //단건 조회
+    @GetMapping("/{pantryId}")
+    public ResponseEntity<PantryResponse> getOne(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long pantryId
+    ) {
+        var user = ((CustomUserDetails) userDetails).getUserEntity();
+        return ResponseEntity.ok(pantryService.getPantry(user, pantryId));
+    }
+
     //냉장고 수정
     @PutMapping("/{pantryId}")
     public ResponseEntity<PantryResponse> update(

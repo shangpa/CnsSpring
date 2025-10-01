@@ -1,10 +1,9 @@
 package com.example.springjwt.recipe;
 
 import com.example.springjwt.dto.CustomUserDetails;
-import com.example.springjwt.ingredient.IngredientMaster;
 import com.example.springjwt.ingredient.IngredientMasterRepository;
+import com.example.springjwt.recipe.expected.ExpectedIngredientDTO;
 import com.example.springjwt.recipeingredient.RecipeIngredient;
-import com.example.springjwt.recipeingredient.RecipeIngredientRepository;
 import com.example.springjwt.search.SearchKeywordService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -146,17 +145,6 @@ public class RecipeController {
         List<IngredientRecipeGroup> result =
                 recipeService.getGroupedRecommendedRecipesByTitle(ingredients);
         return ResponseEntity.ok(result);
-    }
-
-    // 예상 사용 재료
-    @GetMapping("/{recipeId}/expected-ingredients")
-    public ResponseEntity<List<ExpectedIngredientDTO>> getExpectedIngredients(
-            @PathVariable Long recipeId,
-            @AuthenticationPrincipal CustomUserDetails userDetails
-    ) {
-        List<ExpectedIngredientDTO> list =
-                recipeService.getExpectedIngredients(recipeId, userDetails.getUserEntity());
-        return ResponseEntity.ok(list);
     }
 
     // 메인 - 레시피 조회 TOP6

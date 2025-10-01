@@ -1,4 +1,4 @@
-package com.example.springjwt.recipe;
+package com.example.springjwt.recipe.expected;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -363,7 +363,10 @@ public class PantryStockController {
         }
 
         var stocks = pantryStockRepository.findAllById(req.getIds());
-        // 보안: 다른 냉장고 소속 재고가 섞여 있지 않은지 확인
+        boolean allBelong = stocks.stream()
+                .allMatch(s -> s.getPantry() != null && s.getPantry().getId().equals(pantry.getId()));
+        if (!allBelong) throw new IllegalArgumentException("요청에 다른 냉장고 재고가 포함됨");
+
         for (var s : stocks) {
             var qty = s.getQuantity() != null ? s.getQuantity() : java.math.BigDecimal.ZERO;
             if (qty.compareTo(java.math.BigDecimal.ZERO) > 0) {
@@ -372,8 +375,7 @@ public class PantryStockController {
                                 .pantry(s.getPantry())
                                 .ingredient(s.getIngredient())
                                 .unit(s.getUnit())
-                                // ✅ 절대값(양수)으로 저장
-                                .changeQty(qty.abs())
+                                .changeQty(qty.abs().negate())   // ✅ 음수
                                 .action(HistoryAction.DISCARD)
                                 .stock(s)
                                 .refType("PANTRY_STOCK")

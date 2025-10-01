@@ -134,4 +134,12 @@ public class PantryService {
                 .build();
     }
 
+    //단건 조회
+    @Transactional(readOnly = true)
+    public PantryResponse getPantry(UserEntity user, Long pantryId) {
+        var p = pantryRepository.findByIdAndUser_Id(pantryId, user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("해당 냉장고가 없습니다."));
+        return toResponse(p);
+    }
+
 }

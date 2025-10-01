@@ -13,4 +13,6 @@ public interface PantryRepository extends JpaRepository<Pantry, Long> {
 
     Optional<Pantry> findByIdAndUser_Id(Long pantryId, int userId);
 
+    Optional<Pantry> findFirstByUser_IdAndIsDefaultTrue(int userId);
+    
 }

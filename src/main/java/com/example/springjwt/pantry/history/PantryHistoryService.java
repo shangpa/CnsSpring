@@ -33,13 +33,20 @@ public class PantryHistoryService {
         );
 
         return rows.stream().map(h -> {
-            var ing  = h.getIngredient();
-            var unit = h.getUnit();
+            var ing   = h.getIngredient();
+            var unit  = h.getUnit();
             var stock = h.getStock();
-            String purchasedAt = null, expiresAt = null;
-            if (stock != null) {
-                if (stock.getPurchasedAt() != null) purchasedAt = DF_DATE.format(stock.getPurchasedAt());
-                if (stock.getExpiresAt()   != null) expiresAt   = DF_DATE.format(stock.getExpiresAt());
+
+            // 1순위: 히스토리 자체에 저장된 날짜
+            String purchasedAt = (h.getPurchasedAt() != null) ? DF_DATE.format(h.getPurchasedAt()) : null;
+            String expiresAt   = (h.getExpiresAt()   != null) ? DF_DATE.format(h.getExpiresAt())   : null;
+
+            // 2순위: 과거 데이터 호환 - 히스토리에 날짜가 없으면 stock에서 끌어오기
+            if (purchasedAt == null && stock != null && stock.getPurchasedAt() != null) {
+                purchasedAt = DF_DATE.format(stock.getPurchasedAt());
+            }
+            if (expiresAt == null && stock != null && stock.getExpiresAt() != null) {
+                expiresAt = DF_DATE.format(stock.getExpiresAt());
             }
 
             return PantryHistoryDto.builder()

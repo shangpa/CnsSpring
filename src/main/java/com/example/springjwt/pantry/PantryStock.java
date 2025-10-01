@@ -15,7 +15,10 @@ import java.time.LocalDateTime;
         indexes = {
                 @Index(name = "ix_stock_pantry", columnList = "pantry_id"),
                 @Index(name = "ix_stock_pantry_ing", columnList = "pantry_id, ingredient_id"),
-                @Index(name = "ix_stock_expires", columnList = "expiresAt")
+                @Index(name = "ix_stock_expires", columnList = "expiresAt"),
+                @Index(name = "ix_stock_storage", columnList = "storage"),                    // 스토리지 필터
+                @Index(name = "ix_stock_pantry_storage", columnList = "pantry_id, storage"),  // 도넛 통계
+                @Index(name = "ix_stock_fifo", columnList = "pantry_id, ingredient_id, expiresAt, created_at") // FIFO 차감
         }
 )
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder

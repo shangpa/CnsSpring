@@ -85,6 +85,8 @@ public class PantryStockController {
                         .refType("PANTRY_STOCK")
                         .refId(saved.getId())
                         .note(req.getMemo())
+                        .purchasedAt(purchasedAt)
+                        .expiresAt(expiresAt)
                         .build()
         );
 
@@ -281,18 +283,20 @@ public class PantryStockController {
         var newQty = s.getQuantity();
         if (req.getQuantity() != null && newQty != null && oldQty != null) {
             var delta = newQty.subtract(oldQty); // +면 증가, -면 감소
-            if (delta.compareTo(java.math.BigDecimal.ZERO) != 0) {
+            if (delta.compareTo(BigDecimal.ZERO) != 0) {
                 historyRepository.save(
                         PantryHistory.builder()
                                 .pantry(s.getPantry())
                                 .ingredient(s.getIngredient())
                                 .unit(s.getUnit())
-                                .changeQty(delta)                 // 부호 포함
+                                .changeQty(delta)                 // +추가 / -감소
                                 .action(HistoryAction.ADJUST)
-                                .stock(s)
+                                .stock(s)                         // 수정은 stock 유지
                                 .refType("PANTRY_STOCK")
                                 .refId(s.getId())
                                 .note("수정에 따른 수량 조정")
+                                .purchasedAt(s.getPurchasedAt())  // ★ 날짜 복제
+                                .expiresAt(s.getExpiresAt())
                                 .build()
                 );
             }
@@ -327,13 +331,14 @@ public class PantryStockController {
                             .pantry(s.getPantry())
                             .ingredient(s.getIngredient())
                             .unit(s.getUnit())
-                            // ✅ 절대값(양수)으로 저장
-                            .changeQty(qty.abs())
-                            .action(HistoryAction.DISCARD)   // UI에서 - 빨강으로 표시
-                            .stock(s)
+                            .changeQty(qty.abs().negate()) // 폐기 = 음수
+                            .action(HistoryAction.DISCARD)
+                            .stock(null)                   // ★ FK 충돌 방지
                             .refType("PANTRY_STOCK")
                             .refId(s.getId())
                             .note("재고 삭제에 따른 폐기")
+                            .purchasedAt(s.getPurchasedAt())
+                            .expiresAt(s.getExpiresAt())
                             .build()
             );
         }
@@ -375,12 +380,14 @@ public class PantryStockController {
                                 .pantry(s.getPantry())
                                 .ingredient(s.getIngredient())
                                 .unit(s.getUnit())
-                                .changeQty(qty.abs().negate())   // ✅ 음수
+                                .changeQty(qty.abs().negate()) // 폐기 = 음수
                                 .action(HistoryAction.DISCARD)
-                                .stock(s)
+                                .stock(null)                   // ★ FK 충돌 방지
                                 .refType("PANTRY_STOCK")
                                 .refId(s.getId())
-                                .note("일괄 삭제에 따른 폐기")
+                                .note("재고 삭제에 따른 폐기")
+                                .purchasedAt(s.getPurchasedAt())
+                                .expiresAt(s.getExpiresAt())
                                 .build()
                 );
             }

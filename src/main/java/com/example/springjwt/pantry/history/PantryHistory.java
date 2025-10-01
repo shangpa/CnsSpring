@@ -15,7 +15,10 @@ import java.time.LocalDateTime;
         name = "pantry_history",
         indexes = {
                 @Index(name = "ix_hist_pantry", columnList = "pantry_id"),
-                @Index(name = "ix_hist_pantry_ing", columnList = "pantry_id, ingredient_id")
+                @Index(name = "ix_hist_pantry_ing", columnList = "pantry_id, ingredient_id"),
+                @Index(name = "ix_hist_created", columnList = "created_at"),                   // 기간 조회
+                @Index(name = "ix_hist_pantry_created", columnList = "pantry_id, created_at"), // 통계 범용
+                @Index(name = "ix_hist_pantry_action", columnList = "pantry_id, action")       // 액션 필터
         }
 )
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
@@ -57,6 +60,12 @@ public class PantryHistory {
 
     @Column(length = 255)
     private String note;
+
+    @Column(name = "purchased_at")
+    private java.time.LocalDate purchasedAt;
+
+    @Column(name = "expires_at")
+    private java.time.LocalDate expiresAt;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

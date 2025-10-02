@@ -32,6 +32,7 @@ public class RecipeController {
     private final RecipeRepository recipeRepository;
     private final RecipeSearchService recipeSearchService;
     private final IngredientMasterRepository ingredientMasterRepository;
+    private final RecommendService recommendService;
 
     // 레시피 전체 조회
     @GetMapping
@@ -142,9 +143,7 @@ public class RecipeController {
     public ResponseEntity<List<IngredientRecipeGroup>> recommendGroupedByTitle(
             @RequestBody List<String> ingredients
     ) {
-        List<IngredientRecipeGroup> result =
-                recipeService.getGroupedRecommendedRecipesByTitle(ingredients);
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(recommendService.recommendGrouped(ingredients));
     }
 
     // 메인 - 레시피 조회 TOP6

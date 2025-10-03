@@ -3,7 +3,12 @@ package com.example.springjwt.pantry;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
+
+import com.example.springjwt.pantry.StorageLocation;
 
 public interface PantryStockRepository extends JpaRepository<PantryStock, Long> {
     List<PantryStock> findAllByPantry_Id(Long pantryId);
@@ -42,4 +47,13 @@ public interface PantryStockRepository extends JpaRepository<PantryStock, Long> 
      group by s.ingredient.category
     """)
     List<Object[]> countByCategory(@Param("pantryId") Long pantryId);
+
+    Optional<PantryStock> findByPantry_IdAndIngredient_IdAndUnit_IdAndStorageAndPurchasedAtAndExpiresAt(
+            Long pantryId,
+            Long ingredientId,
+            Long unitId,
+            StorageLocation storage,
+            LocalDate purchasedAt,
+            LocalDate expiresAt
+    );
 }

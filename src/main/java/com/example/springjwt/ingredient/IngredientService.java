@@ -39,4 +39,10 @@ public class IngredientService {
                 .map(UnitResponse::fromEntity)
                 .toList();
     }
+
+    public List<IngredientMasterResponse> searchByName(String keyword) {
+        if (keyword == null || keyword.isBlank()) return List.of();
+        return ingredientRepo.findTop20ByNameKoContainingIgnoreCaseOrderByNameKoAsc(keyword.trim())
+                .stream().map(IngredientMasterResponse::fromEntity).toList();
+    }
 }

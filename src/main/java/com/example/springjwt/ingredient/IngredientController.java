@@ -43,4 +43,10 @@ public class IngredientController {
     public ResponseEntity<List<UnitResponse>> units() {
         return ResponseEntity.ok(ingredientService.getUnits());
     }
+
+    @GetMapping("/ingredients/search")
+    public ResponseEntity<List<IngredientMasterResponse>> search(@RequestParam String keyword) {
+        var rows = ingredientService.searchByName(keyword);
+        return ResponseEntity.ok(rows);
+    }
 }

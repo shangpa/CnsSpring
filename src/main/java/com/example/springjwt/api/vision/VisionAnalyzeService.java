@@ -3,10 +3,13 @@ package com.example.springjwt.api.vision;
 import com.example.springjwt.User.UserEntity;
 import com.example.springjwt.User.UserRepository;
 import com.example.springjwt.api.GoogleTranslateService;
+import com.example.springjwt.api.IngredientDetectResponse;
 import com.example.springjwt.fridge.Fridge;
 import com.example.springjwt.fridge.FridgeRepository;
 import com.example.springjwt.fridge.FridgeService;
 import com.example.springjwt.fridge.UnitCategory;
+import com.example.springjwt.ingredient.IngredientMaster;
+import com.example.springjwt.ingredient.IngredientMasterRepository;
 import com.example.springjwt.recipe.cashe.IngredientNameCache;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,6 +33,7 @@ public class VisionAnalyzeService {
     private final IngredientNameCache ingredientNameCache;
     private final IngredientParser ingredientParser;
     private final GoogleTranslateService googleTranslateService;
+    private final IngredientMasterRepository ingredientMasterRepository;
 
     public List<String> analyzeAndSave(MultipartFile imageFile, UserEntity user) {
         List<String> detectedLabels = gcpVisionClient.detectLabels(imageFile); // 예: ["onion", "table", "apple"]
@@ -81,14 +85,15 @@ public class VisionAnalyzeService {
         return savedIngredients;
     }
 
-    public List<String> analyzeOnly(MultipartFile imageFile) {
+    public List<IngredientDetectResponse> analyzeOnly(MultipartFile imageFile) {
+        // 1️⃣ Vision 인식
         List<String> detectedLabels = gcpVisionClient.detectLabels(imageFile);
         System.out.println("📸 [VisionAnalyzeService] Vision 결과 라벨: " + detectedLabels);
 
-        // 전체 캐시된 재료명 가져오기
-        Set<String> allKorNames = ingredientNameCache.getAll(); // 예: [양파, 당근, 우유]
+        // 2️⃣ 캐시된 한글 재료명 전체
+        Set<String> allKorNames = ingredientNameCache.getAll();
 
-        // 한글 → 영어 번역
+        // 3️⃣ 한글 → 영어 번역
         Map<String, String> korToEng = googleTranslateService.translateBatch(new ArrayList<>(allKorNames));
         Map<String, String> engToKor = korToEng.entrySet().stream()
                 .collect(Collectors.toMap(
@@ -97,14 +102,25 @@ public class VisionAnalyzeService {
                         (existing, replacement) -> existing
                 ));
 
-        List<String> matchedIngredients = new ArrayList<>();
+        List<IngredientDetectResponse> matchedIngredients = new ArrayList<>();
 
+        // 4️⃣ Vision label → IngredientMaster 매칭
         for (String label : detectedLabels) {
             String labelLower = label.toLowerCase();
             if (engToKor.containsKey(labelLower)) {
                 String korName = engToKor.get(labelLower);
-                matchedIngredients.add(korName);
-                System.out.println("🔍 [analyzeOnly] 감지된 재료명: " + korName);
+
+                // DB에서 해당 재료 찾기
+                IngredientMaster master = ingredientMasterRepository.findByNameKoIgnoreCase(korName).orElse(null);
+
+                Long id = (master != null) ? master.getId() : null;
+
+                matchedIngredients.add(IngredientDetectResponse.builder()
+                        .ingredientId(id)
+                        .nameKo(korName)
+                        .build());
+
+                System.out.println("🔍 [analyzeOnly] 감지된 재료명: " + korName + " (id=" + id + ")");
             }
         }
 

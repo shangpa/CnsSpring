@@ -18,33 +18,6 @@ public class FridgeRecommendService {
     private final LikeRecipeRepository likeRecipeRepository;
     private final ObjectMapper objectMapper;
 
-    public List<RecipeRecommendResponseDTO> recommendRecipes(List<String> selectedIngredients) {
-        List<Recipe> allRecipes = recipeRepository.findAll();
-        List<RecipeRecommendResponseDTO> result = new ArrayList<>();
-
-        for (Recipe recipe : allRecipes) {
-            if (isRecipeMatch(recipe, selectedIngredients)) {
-                int likeCount = likeRecipeRepository.countByRecipe(recipe);
-                RecipeRecommendResponseDTO dto = RecipeRecommendResponseDTO.builder()
-                        .recipeId(recipe.getRecipeId())
-                        .title(recipe.getTitle())
-                        .mainImageUrl(recipe.getMainImageUrl())
-                        .difficulty(recipe.getDifficulty() != null ? recipe.getDifficulty().name() : null)
-                        .cookingTime(recipe.getCookingTime())
-                        .reviewAverage(0.0) // 리뷰 평균(추후)
-                        .reviewCount(0)     // 리뷰 수(추후)
-                        .writerNickname(recipe.getUser().getUsername())
-                        .viewCount(recipe.getViewCount())
-                        .likeCount(likeCount)
-                        .createdAt(recipe.getCreatedAt().toString())
-                        .build();
-                result.add(dto);
-            }
-        }
-
-        return result;
-    }
-
     private boolean isRecipeMatch(Recipe recipe, List<String> selectedIngredients) {
         if (recipe.getIngredients() == null) return false;
 
@@ -56,4 +29,34 @@ public class FridgeRecommendService {
                 .map(name -> name.replaceAll("\\s+", ""))
                 .allMatch(ingredientNames::contains);
     }
+
+    // id로 넘어온 재료 레시피 추천
+    public List<RecipeRecommendResponseDTO> recommendRecipes(List<Long> ingredientIds) {
+        if (ingredientIds == null || ingredientIds.isEmpty()) {
+            return List.of();
+        }
+
+
+        List<Recipe> recipes = recipeRepository.findPublicRecipesContainingAnyIngredientIds(ingredientIds);
+
+        List<RecipeRecommendResponseDTO> result = new ArrayList<>(recipes.size());
+        for (Recipe r : recipes) {
+            int likeCount = likeRecipeRepository.countByRecipe(r); // (옵션) 배치 최적화 가능
+            result.add(RecipeRecommendResponseDTO.builder()
+                    .recipeId(r.getRecipeId())
+                    .title(r.getTitle())
+                    .mainImageUrl(r.getMainImageUrl())
+                    .difficulty(r.getDifficulty() != null ? r.getDifficulty().name() : null)
+                    .cookingTime(r.getCookingTime())
+                    .reviewAverage(0.0) // TODO: 리뷰 평균 연동
+                    .reviewCount(0)     // TODO: 리뷰 수 연동
+                    .writerNickname(r.getUser() != null ? r.getUser().getUsername() : null)
+                    .viewCount(r.getViewCount())
+                    .likeCount(likeCount)
+                    .createdAt(r.getCreatedAt() != null ? r.getCreatedAt().toString() : null)
+                    .build());
+        }
+        return result;
+    }
+
 }

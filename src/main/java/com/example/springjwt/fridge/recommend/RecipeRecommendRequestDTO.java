@@ -8,5 +8,5 @@ import java.util.List;
 @Getter
 @Setter
 public class RecipeRecommendRequestDTO {
-    private List<String> selectedIngredients;
+    private List<Long> selectedIngredientIds;
 }

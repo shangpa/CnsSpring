@@ -167,4 +167,20 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
 
     // 특정 유저 + 특정 레시피 → 임시저장 여부 체크
     Optional<Recipe> findByRecipeIdAndUserIdAndIsDraftTrue(Long recipeId, int userId);
+
+    /**
+     * 선택한 재료 중 하나라도 포함된 공개 레시피 조회
+     */
+    @Query("""
+    SELECT DISTINCT r
+    FROM Recipe r
+      JOIN r.ingredients ri
+    WHERE r.isDraft = false
+      AND r.isPublic = true
+      AND ri.ingredient.id IN :ingredientIds
+    """)
+    List<Recipe> findPublicRecipesContainingAnyIngredientIds(
+            @Param("ingredientIds") List<Long> ingredientIds
+    );
+
 }

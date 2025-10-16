@@ -15,6 +15,7 @@ import com.example.springjwt.board.BoardService;
 import com.example.springjwt.dto.CustomUserDetails;
 import com.example.springjwt.dto.JoinDTO;
 import com.example.springjwt.admin.dto.PointHistoryDTO;
+import com.example.springjwt.ingredient.dto.IngredientMasterResponse;
 import com.example.springjwt.mypage.LikeRecipe;
 import com.example.springjwt.mypage.LikeRecipeRepository;
 import com.example.springjwt.mypage.RecommendRecipeRepository;
@@ -70,6 +71,7 @@ public class AdminController {
     private final LikeRecipeRepository likeRecipeRepository;
     private final RecommendRecipeRepository recommendRecipeRepository;
     private final ReviewService reviewService;
+    private final AdminIngredientService adminIngredientService;
 
     // 관리자 회원가입
     @PostMapping("/join")
@@ -920,6 +922,37 @@ public class AdminController {
                         log.getReason(),
                         log.getCreatedAt()
                 ));
+    }
+    @PostMapping
+    public ResponseEntity<IngredientMasterResponse> createIngredient(
+            @RequestBody IngredientAdminRequest dto,
+            @AuthenticationPrincipal CustomUserDetails admin
+    ) {
+        return ResponseEntity.ok(adminIngredientService.create(admin.getUsername(), dto));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<IngredientMasterResponse> updateIngredient(
+            @PathVariable Long id,
+            @RequestBody IngredientAdminRequest dto,
+            @AuthenticationPrincipal CustomUserDetails admin
+    ) {
+        return ResponseEntity.ok(adminIngredientService.update(id, admin.getUsername(), dto));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteIngredient(
+            @PathVariable Long id,
+            @RequestBody DeleteRequestDTO requestDTO,
+            @AuthenticationPrincipal CustomUserDetails admin
+    ) {
+        adminIngredientService.delete(id, admin.getUsername(), requestDTO.getReason());
+        return ResponseEntity.ok("재료 삭제 및 로그 기록 완료");
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<IngredientMasterResponse> getIngredient(@PathVariable Long id) {
+        return ResponseEntity.ok(adminIngredientService.getById(id));
     }
 
 }

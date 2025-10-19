@@ -479,8 +479,9 @@ public class RecipeService {
     }
 
     // 내 초안 단건 조회 (컨트롤러에서 사용)
+    @Transactional(readOnly = true)
     public RecipeDTO getMyDraftById(Long recipeId, UserEntity user) {
-        Recipe recipe = recipeRepository.findByRecipeIdAndUserIdAndIsDraftTrue(recipeId, user.getId())
+        Recipe recipe = recipeRepository.findDraftWithIngredients(recipeId, user.getId())
                 .orElseThrow(() -> new RuntimeException("임시저장 레시피를 찾을 수 없습니다."));
         return RecipeDTO.fromEntity(recipe);
     }
@@ -501,4 +502,47 @@ public class RecipeService {
                 .collect(Collectors.toList());
     }
 
+    // 임시저장
+    @Transactional
+    public Long createDraftTransactional(RecipeDTO dto, UserEntity user) {
+        Recipe entity = dto.toEntityDraftSafe();
+        if (entity.getRecipeType() == null) entity.setRecipeType(RecipeType.IMAGE);
+        entity.setUser(user);
+        entity.setDraft(true);
+        entity.setPublic(false);
+        entity.setCreatedAt(LocalDateTime.now());
+
+        recipeRepository.save(entity); // 부모 영속화
+
+        if (dto.getIngredients() != null && !dto.getIngredients().isEmpty()) {
+            List<RecipeIngredient> ingList = dto.getIngredients().stream()
+                    .map(riDto -> {
+                        if (riDto.getId() == null && (riDto.getName() == null || riDto.getName().isBlank())) return null;
+
+                        var master = (riDto.getId() != null)
+                                ? ingredientMasterRepository.findById(riDto.getId()).orElse(null)
+                                : ingredientMasterRepository.findByNameKoIgnoreCase(riDto.getName()).orElse(null);
+                        if (master == null) return null;
+
+                        Double qty = riDto.getAmount() != null ? riDto.getAmount() : 1.0; // 기본값 1.0
+                        return RecipeIngredient.builder()
+                                .ingredient(master)
+                                .quantity(qty)
+                                .build();
+                    })
+                    .filter(Objects::nonNull)
+                    .toList();
+
+            if (!ingList.isEmpty()) {
+                entity.getIngredients().clear();     // orphanRemoval 로 기존 것 제거
+                for (RecipeIngredient ri : ingList) {
+                    ri.setRecipe(entity);            // 🔴 역방향 세팅 필수
+                    entity.getIngredients().add(ri); // 부모 컬렉션에 추가
+                }
+                recipeRepository.save(entity);       // 병합(변경감지로도 됨, 호출해도 무방)
+            }
+        }
+
+        return entity.getRecipeId();
+    }
 }

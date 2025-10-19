@@ -4,6 +4,7 @@ import com.example.springjwt.dto.CustomUserDetails;
 import com.example.springjwt.ingredient.IngredientMasterRepository;
 import com.example.springjwt.recipe.expected.ExpectedIngredientDTO;
 import com.example.springjwt.recipeingredient.RecipeIngredient;
+import com.example.springjwt.recipeingredient.RecipeIngredientRepository;
 import com.example.springjwt.search.SearchKeywordService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ public class RecipeController {
     private final RecipeSearchService recipeSearchService;
     private final IngredientMasterRepository ingredientMasterRepository;
     private final RecommendService recommendService;
+    private final RecipeIngredientRepository recipeIngredientRepository;
 
     // 레시피 전체 조회
     @GetMapping
@@ -177,10 +179,8 @@ public class RecipeController {
     public ResponseEntity<List<RecipeDTO>> getMyDrafts(
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        List<Recipe> drafts =
-                recipeRepository.findByUserIdAndIsDraftTrueOrderByCreatedAtDesc(
-                        Long.valueOf(userDetails.getUserEntity().getId())
-                );
+        int uid = userDetails.getUserEntity().getId();
+        List<Recipe> drafts = recipeRepository.findByUserIdAndIsDraftTrueOrderByCreatedAtDesc(uid);
         List<RecipeDTO> result = drafts.stream()
                 .map(RecipeDTO::fromEntity)
                 .collect(Collectors.toList());
@@ -203,15 +203,8 @@ public class RecipeController {
             @RequestBody RecipeDTO dto,
             @AuthenticationPrincipal CustomUserDetails user
     ) {
-        log.info("Draft create DTO: {}", dto); // OK
-        Recipe entity = dto.toEntityDraftSafe();
-        entity.setUser(user.getUserEntity());
-        entity.setDraft(true);
-        entity.setPublic(false);
-        entity.setCreatedAt(LocalDateTime.now());
-
-        Recipe saved = recipeRepository.save(entity);
-        return ResponseEntity.ok(new RecipeResponseDTO(true, "임시저장 생성", saved.getRecipeId()));
+        Long id = recipeService.createDraftTransactional(dto, user.getUserEntity());
+        return ResponseEntity.ok(new RecipeResponseDTO(true, "임시저장 생성", id));
     }
 
     // 임시저장 수정(작성 중 계속 저장)
@@ -225,42 +218,54 @@ public class RecipeController {
                 .findByRecipeIdAndUserIdAndIsDraftTrue(id, user.getUserEntity().getId())
                 .orElseThrow(() -> new RuntimeException("임시저장이 없거나 권한 없음."));
 
+        // 제목
         if (StringUtils.hasText(dto.getTitle())) draft.setTitle(dto.getTitle());
+
+        // 카테고리/난이도/레시피타입: 빈문자 무시
         if (StringUtils.hasText(dto.getCategory())) {
             try { draft.setCategory(RecipeCategory.valueOf(dto.getCategory())); }
             catch (Exception e) { log.warn("Invalid category: {}", dto.getCategory()); }
         }
-        if (dto.getIngredients() != null) {
-            List<RecipeIngredient> ingList = dto.getIngredients().stream()
-                    .map(riDto -> RecipeIngredient.builder()
-                            .recipe(draft)
-                            .ingredient(ingredientMasterRepository.findById(riDto.getId())
-                                    .orElseThrow(() -> new IllegalArgumentException("재료 없음: " + riDto.getId())))
-                            .quantity(riDto.getAmount())
-                            .build())
-                    .toList();
-
-            draft.getIngredients().clear();
-            draft.getIngredients().addAll(ingList);
-        }
-
-        if (StringUtils.hasText(dto.getAlternativeIngredients())) draft.setAlternativeIngredients(dto.getAlternativeIngredients());
-        if (StringUtils.hasText(dto.getHandlingMethods())) draft.setHandlingMethods(dto.getHandlingMethods());
-        if (StringUtils.hasText(dto.getCookingSteps())) draft.setCookingSteps(dto.getCookingSteps());
-        if (StringUtils.hasText(dto.getMainImageUrl())) draft.setMainImageUrl(dto.getMainImageUrl());
         if (StringUtils.hasText(dto.getDifficulty())) {
             try { draft.setDifficulty(RecipeDifficulty.valueOf(dto.getDifficulty())); }
             catch (Exception e) { log.warn("Invalid difficulty: {}", dto.getDifficulty()); }
         }
-        if (StringUtils.hasText(dto.getTags())) draft.setTags(dto.getTags());
-        if (dto.getCookingTime() != null) draft.setCookingTime(dto.getCookingTime());
-        if (dto.getServings()    != null) draft.setServings(dto.getServings());
-        if (StringUtils.hasText(dto.getVideoUrl())) draft.setVideoUrl(dto.getVideoUrl());
         if (StringUtils.hasText(dto.getRecipeType())) {
             try { draft.setRecipeType(RecipeType.valueOf(dto.getRecipeType())); }
             catch (Exception e) { log.warn("Invalid recipeType: {}", dto.getRecipeType()); }
         }
 
+        // 재료 교체
+        if (dto.getIngredients() != null) {
+            List<RecipeIngredient> ingList = dto.getIngredients().stream()
+                    .filter(riDto -> riDto.getId() != null)
+                    .map(riDto -> RecipeIngredient.builder()
+                            .ingredient(ingredientMasterRepository.findById(riDto.getId())
+                                    .orElseThrow(() -> new IllegalArgumentException("재료 없음: " + riDto.getId())))
+                            .quantity(riDto.getAmount() != null ? riDto.getAmount() : 1.0)
+                            .build())
+                    .toList();
+
+            draft.getIngredients().clear();        // orphanRemoval 로 기존 것 삭제
+            for (RecipeIngredient ri : ingList) {
+                ri.setRecipe(draft);               // 🔴 역방향 세팅
+                draft.getIngredients().add(ri);
+            }
+        }
+
+        // 지우기 허용 문자열들: null이면 미변경, ""이면 비우기
+        if (dto.getAlternativeIngredients() != null) draft.setAlternativeIngredients(dto.getAlternativeIngredients());
+        if (dto.getHandlingMethods()        != null) draft.setHandlingMethods(dto.getHandlingMethods());
+        if (dto.getCookingSteps()           != null) draft.setCookingSteps(dto.getCookingSteps());
+        if (dto.getMainImageUrl()           != null) draft.setMainImageUrl(dto.getMainImageUrl());
+        if (dto.getTags()                   != null) draft.setTags(dto.getTags());
+        if (dto.getVideoUrl()               != null) draft.setVideoUrl(dto.getVideoUrl());
+
+        // 숫자형
+        if (dto.getCookingTime() != null) draft.setCookingTime(dto.getCookingTime());
+        if (dto.getServings()    != null) draft.setServings(dto.getServings());
+
+        // 강제 초안 상태 유지
         draft.setDraft(true);
         draft.setPublic(false);
 

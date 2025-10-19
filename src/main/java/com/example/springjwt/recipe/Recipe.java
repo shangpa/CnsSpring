@@ -37,8 +37,18 @@ public class Recipe {
     private String ingredients; // JSON 형식의 재료
     */
     @OneToMany(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<RecipeIngredient> ingredients = new ArrayList<>();
 
+    /** orphanRemoval=true에서 안전하게 자식 목록을 교체하는 헬퍼 */
+    public void replaceIngredients(List<RecipeIngredient> newOnes) {
+        this.ingredients.clear();                 // 프록시 유지 + 기존 orphan 삭제
+        if (newOnes == null) return;
+        for (RecipeIngredient ri : newOnes) {
+            ri.setRecipe(this);                   // 🔴 역방향(주인) 세팅 필수
+            this.ingredients.add(ri);
+        }
+    }
 
     @Lob
     @Column(columnDefinition = "TEXT")

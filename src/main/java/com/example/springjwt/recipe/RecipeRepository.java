@@ -161,7 +161,7 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
     List<Recipe> findByUserIdAndIsDraftFalse(int userId);
 
     // 특정 사용자 임시저장만
-    List<Recipe> findByUserIdAndIsDraftTrueOrderByCreatedAtDesc(Long userId);
+    List<Recipe> findByUserIdAndIsDraftTrueOrderByCreatedAtDesc(int userId);
 
     List<Recipe> findByTitleContainingIgnoreCaseAndIsPublicTrueAndIsDraftFalse(String title);
 
@@ -182,5 +182,15 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
     List<Recipe> findPublicRecipesContainingAnyIngredientIds(
             @Param("ingredientIds") List<Long> ingredientIds
     );
+
+    //임시저장
+    @Query("""
+    select r from Recipe r
+    left join fetch r.ingredients ri
+    left join fetch ri.ingredient im
+    where r.recipeId = :recipeId and r.user.id = :userId and r.isDraft = true
+    """)
+    Optional<Recipe> findDraftWithIngredients(@Param("recipeId") Long recipeId,
+                                              @Param("userId") int userId);
 
 }

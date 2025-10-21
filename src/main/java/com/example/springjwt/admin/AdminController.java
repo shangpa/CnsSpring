@@ -15,6 +15,9 @@ import com.example.springjwt.board.BoardService;
 import com.example.springjwt.dto.CustomUserDetails;
 import com.example.springjwt.dto.JoinDTO;
 import com.example.springjwt.admin.dto.PointHistoryDTO;
+import com.example.springjwt.ingredient.IngredientCategory;
+import com.example.springjwt.ingredient.UnitEntity;
+import com.example.springjwt.ingredient.UnitRepository;
 import com.example.springjwt.ingredient.dto.IngredientMasterResponse;
 import com.example.springjwt.mypage.LikeRecipe;
 import com.example.springjwt.mypage.LikeRecipeRepository;
@@ -46,6 +49,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -72,6 +76,7 @@ public class AdminController {
     private final RecommendRecipeRepository recommendRecipeRepository;
     private final ReviewService reviewService;
     private final AdminIngredientService adminIngredientService;
+    private final UnitRepository unitRepository;
 
     // 관리자 회원가입
     @PostMapping("/join")
@@ -923,7 +928,7 @@ public class AdminController {
                         log.getCreatedAt()
                 ));
     }
-    @PostMapping
+    @PostMapping("/ingredients")
     public ResponseEntity<IngredientMasterResponse> createIngredient(
             @RequestBody IngredientAdminRequest dto,
             @AuthenticationPrincipal CustomUserDetails admin
@@ -931,7 +936,7 @@ public class AdminController {
         return ResponseEntity.ok(adminIngredientService.create(admin.getUsername(), dto));
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/ingredients/{id}")
     public ResponseEntity<IngredientMasterResponse> updateIngredient(
             @PathVariable Long id,
             @RequestBody IngredientAdminRequest dto,
@@ -940,7 +945,7 @@ public class AdminController {
         return ResponseEntity.ok(adminIngredientService.update(id, admin.getUsername(), dto));
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/ingredients/{id}")
     public ResponseEntity<String> deleteIngredient(
             @PathVariable Long id,
             @RequestBody DeleteRequestDTO requestDTO,
@@ -950,9 +955,22 @@ public class AdminController {
         return ResponseEntity.ok("재료 삭제 및 로그 기록 완료");
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/ingredients/{id}")
     public ResponseEntity<IngredientMasterResponse> getIngredient(@PathVariable Long id) {
         return ResponseEntity.ok(adminIngredientService.getById(id));
     }
 
+    @GetMapping("/units")
+    public ResponseEntity<List<UnitEntity>> getAllUnits() {
+        return ResponseEntity.ok(unitRepository.findAll());
+    }
+
+    @GetMapping("/ingredients/categories")
+    public ResponseEntity<List<String>> getIngredientCategories() {
+        List<String> categories = Arrays.stream(IngredientCategory.values())
+                .map(Enum::name) // enum 이름 그대로
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(categories);
+    }
 }

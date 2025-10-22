@@ -6,6 +6,7 @@ import com.example.springjwt.recipe.expected.ExpectedIngredientDTO;
 import com.example.springjwt.recipeingredient.RecipeIngredient;
 import com.example.springjwt.recipeingredient.RecipeIngredientRepository;
 import com.example.springjwt.search.SearchKeywordService;
+import com.example.springjwt.search.SeasonalRecipeDto;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -96,17 +97,14 @@ public class RecipeController {
 
     // 프론트가 호출하는 검색 (리스트)
     @GetMapping("/search")
-    public List<Recipe> searchRecipes(
+    public List<RecipeSearchResponseDTO> searchRecipes(
             @RequestParam String title,
             @RequestParam(required = false) String category,   // "koreaFood" 등
             @RequestParam(required = false) String sort        // viewCount|likes|latest|shortTime|longTime
     ) {
-        if (title != null && !title.isBlank()) {
-            searchKeywordService.saveKeyword(title);          // 인기 검색어 저장
-        }
         SortKey key = parseSort(sort);
         Page<Recipe> page = recipeSearchService.search(title, category, key, 0, 200);
-        return page.getContent();
+        return recipeService.toSearchDtoList(page.getContent()); // 여기서 DTO 변환
     }
 
     // ✅ 페이징 버전 (선택)
@@ -160,9 +158,9 @@ public class RecipeController {
 
     // 제철 음식 추천 (제목 기준)
     @GetMapping("/seasonal")
-    public List<com.example.springjwt.search.SeasonalRecipeDto> getSeasonalRecipes() {
+    public List<SeasonalRecipeDto> getSeasonalRecipes() {
         List<String> seasonalTitles = List.of("삼계탕", "초계국수", "콩국수", "물회", "오이냉국");
-        return recipeRepository.findSeasonalByExactTitles(seasonalTitles);
+        return recipeRepository.findSeasonalByExactTitles(seasonalTitles); // 레포지토리 프로젝션 쿼리 사용 권장
     }
 
     // 레시피 탭 - 레시피 이거 어때요?

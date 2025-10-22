@@ -212,29 +212,30 @@ public class RecipeService {
     }
 
     // 레시피 검색 (공개 + 초안 제외)
-    public List<RecipeSearchResponseDTO> searchRecipesByTitle(String title) {
-        List<Recipe> recipes;
+    private UserEntity currentUserOrNull() {
         String username = Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
                 .map(a -> a.getName()).orElse(null);
-        UserEntity currentUser = (username != null && !"anonymousUser".equalsIgnoreCase(username))
+        return (username != null && !"anonymousUser".equalsIgnoreCase(username))
                 ? userRepository.findByUsername(username)
                 : null;
+    }
 
-        if (title == null || title.trim().isEmpty()) {
-            recipes = recipeRepository.findByIsPublicTrueAndIsDraftFalse();
-        } else {
-            recipes = recipeRepository.findByTitleContainingIgnoreCaseAndIsPublicTrueAndIsDraftFalse(title);
-        }
+    public List<RecipeSearchResponseDTO> toSearchDtoList(List<Recipe> recipes) {
+        UserEntity currentUser = currentUserOrNull();
+        return recipes.stream().map(recipe -> {
+            Double avgRatingWrapper = reviewRepository.findAvgRatingByRecipe(recipe.getRecipeId());
+            double avgRating = avgRatingWrapper != null ? avgRatingWrapper : 0.0;
+            int reviewCount = reviewRepository.countByRecipe(recipe);
+            boolean liked = (currentUser != null) && likeRecipeRepository.existsByUserAndRecipe(currentUser, recipe);
+            return RecipeSearchResponseDTO.fromEntity(recipe, avgRating, reviewCount, liked);
+        }).toList();
+    }
 
-        return recipes.stream()
-                .map(recipe -> {
-                    Double avgRatingWrapper = reviewRepository.findAvgRatingByRecipe(recipe.getRecipeId());
-                    double avgRating = avgRatingWrapper != null ? avgRatingWrapper : 0.0;
-                    int reviewCount = reviewRepository.countByRecipe(recipe);
-                    boolean liked = (currentUser != null) && likeRecipeRepository.existsByUserAndRecipe(currentUser, recipe);
-                    return RecipeSearchResponseDTO.fromEntity(recipe, avgRating, reviewCount, liked);
-                })
-                .collect(Collectors.toList());
+    public List<RecipeSearchResponseDTO> searchRecipesByTitle(String title) {
+        List<Recipe> recipes = (title == null || title.trim().isEmpty())
+                ? recipeRepository.findByIsPublicTrueAndIsDraftFalse()
+                : recipeRepository.findByTitleContainingIgnoreCaseAndIsPublicTrueAndIsDraftFalse(title);
+        return toSearchDtoList(recipes);  // 공통 매퍼 재사용
     }
 
     //관리자 - 카테고리별 통계

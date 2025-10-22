@@ -20,7 +20,9 @@ public class SearchKeywordService {
     }
 
     public List<String> getTop10Keywords() {
-        return searchKeywordRepository.findTopKeywords(PageRequest.of(0, 10)).stream()
+        LocalDateTime since = LocalDateTime.now().minusDays(14); // 최근 14일
+        return searchKeywordRepository.findTopKeywordsSince(since, PageRequest.of(0, 10))
+                .stream()
                 .map(obj -> (String) obj[0])
                 .collect(Collectors.toList());
     }

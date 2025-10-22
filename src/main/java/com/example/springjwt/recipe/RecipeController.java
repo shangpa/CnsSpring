@@ -160,9 +160,9 @@ public class RecipeController {
 
     // 제철 음식 추천 (제목 기준)
     @GetMapping("/seasonal")
-    public List<RecipeDTO> getSeasonalRecipes() {
+    public List<com.example.springjwt.search.SeasonalRecipeDto> getSeasonalRecipes() {
         List<String> seasonalTitles = List.of("삼계탕", "초계국수", "콩국수", "물회", "오이냉국");
-        return recipeService.findRecipesByTitlesContaining(seasonalTitles);
+        return recipeRepository.findSeasonalByExactTitles(seasonalTitles);
     }
 
     // 레시피 탭 - 레시피 이거 어때요?
@@ -248,7 +248,7 @@ public class RecipeController {
 
             draft.getIngredients().clear();        // orphanRemoval 로 기존 것 삭제
             for (RecipeIngredient ri : ingList) {
-                ri.setRecipe(draft);               // 🔴 역방향 세팅
+                ri.setRecipe(draft);               // 역방향 세팅
                 draft.getIngredients().add(ri);
             }
         }

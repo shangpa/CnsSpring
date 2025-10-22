@@ -122,7 +122,12 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
 
 
     //레시피 검색 - 제철 음식 추천
-    List<Recipe> findByTitleInAndIsPublicTrue(List<String> titles);
+    @Query("""
+    select new com.example.springjwt.search.SeasonalRecipeDto(r.recipeId, r.title, r.mainImageUrl)
+    from Recipe r
+    where r.isPublic = true and r.isDraft = false and r.title in :titles
+    """)
+    List<com.example.springjwt.search.SeasonalRecipeDto> findSeasonalByExactTitles(@Param("titles") List<String> titles);
 
     //레시피 검색
     Page<Recipe> findByIsPublicTrueAndTitleContainingIgnoreCase(String title, Pageable pageable);

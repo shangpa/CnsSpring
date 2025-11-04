@@ -51,7 +51,7 @@ public class TradeCompleteRequestService {
         String content = user.getUsername() + "님이 '" + post.getTitle() + "' 거래글에 거래 완료 요청을 보냈습니다.";
         NotificationRequestDTO notification = new NotificationRequestDTO();
         notification.setUserId(seller.getId());
-        notification.setCategory("거래 요청");
+        notification.setCategory("TRADE_REQUEST");
         notification.setContent(content);
         notificationService.notifyUser(notification);
         return ResponseEntity.ok("거래 요청 완료");

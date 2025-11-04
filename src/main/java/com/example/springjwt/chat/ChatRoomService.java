@@ -66,8 +66,6 @@ public class ChatRoomService {
 
     // 사용자 ID 두 개로 고유 roomKey 생성
     private String makeRoomKey(Long a, Long b, Long postId) {
-        Long min = Math.min(a, b);
-        Long max = Math.max(a, b);
-        return min + "-" + max + "-" + postId;
+        return a + "-" + b + "-" + postId;
     }
 }

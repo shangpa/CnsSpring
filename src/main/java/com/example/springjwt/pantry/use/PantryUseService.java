@@ -82,8 +82,8 @@ public class PantryUseService {
 
                 // 6) 재고 반영
                 if (willBeZero) {
-                    // 0이 되면 즉시 삭제 (히스토리는 stock=null로 이미 안전)
-                    stockRepo.delete(s);
+                    s.setQuantity(BigDecimal.ZERO);
+                    stockRepo.save(s);  // ← delete 대신 save
                 } else {
                     s.setQuantity(q.subtract(consume));
                     stockRepo.save(s);

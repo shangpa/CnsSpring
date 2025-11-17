@@ -50,7 +50,7 @@ public class OpenAiService {
         body.put("model", "dall-e-3");
         body.put("prompt", translatedPrompt);
         body.put("n", 1);
-        body.put("size", "512x512");
+        body.put("size", "1024x1024");
 
         HttpEntity<String> request = new HttpEntity<>(body.toString(), headers);
         ResponseEntity<String> response = restTemplate.postForEntity(apiUrl, request, String.class);

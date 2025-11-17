@@ -156,10 +156,9 @@ public class RecipeService {
             try {
                 String prompt = buildPrompt(savedRecipe);
                 String imageUrl = openAiService.generateThumbnail(prompt);
+                System.out.println("이미지 생성이 되어야함");
                 savedRecipe.setMainImageUrl(imageUrl);
-                // 변경감지로 저장
             } catch (Exception e) {
-                // 로깅만
             }
         }
 

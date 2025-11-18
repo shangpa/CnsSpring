@@ -53,16 +53,62 @@ public class OpenAiService {
         body.put("size", "1024x1024");
 
         HttpEntity<String> request = new HttpEntity<>(body.toString(), headers);
-        ResponseEntity<String> response = restTemplate.postForEntity(apiUrl, request, String.class);
 
+        ResponseEntity<String> response = null;
 
-        JSONObject responseJson = new JSONObject(response.getBody());
-        String openAiImageUrl = responseJson.getJSONArray("data").getJSONObject(0).getString("url");
+        // 🔥 1. OpenAI 호출 try-catch
+        try {
+            System.out.println("📡 OpenAI 호출 시작");
+            response = restTemplate.postForEntity(apiUrl, request, String.class);
+            System.out.println("📡 OpenAI 응답 도착");
+        } catch (Exception e) {
+            System.out.println("❌ OpenAI 요청 중 오류 발생!");
+            e.printStackTrace(); // ★ 오류 로그 완전 출력
+            throw new RuntimeException("OpenAI 호출 실패: " + e.getMessage(), e);
+        }
+
+        // 🔥 2. 응답 로그 출력
+        System.out.println("🔍 OpenAI RAW RESPONSE: " + response.getBody());
+
+        JSONObject responseJson = null;
+
+        // 🔥 3. JSON 파싱 try-catch
+        try {
+            responseJson = new JSONObject(response.getBody());
+        } catch (Exception e) {
+            System.out.println("❌ JSON 파싱 중 오류 발생!");
+            e.printStackTrace();
+            throw new RuntimeException("JSON 파싱 실패: " + e.getMessage()
+                    + "\n응답 내용: " + response.getBody(), e);
+        }
+
+        String openAiImageUrl = null;
+
+        // 🔥 4. 이미지 URL 추출 try-catch
+        try {
+            openAiImageUrl = responseJson
+                    .getJSONArray("data")
+                    .getJSONObject(0)
+                    .getString("url");
+        } catch (Exception e) {
+            System.out.println("❌ 이미지 URL 추출 중 오류 발생!");
+            e.printStackTrace();
+            throw new RuntimeException("이미지 URL 추출 실패: " + e.getMessage()
+                    + "\n응답 내용: " + response.getBody(), e);
+        }
 
         System.out.println("OpenAI 이미지 생성 URL: " + openAiImageUrl);
 
-        // 🔽 여기가 핵심: 외부 이미지 → 서버 저장 → 내부 URL 반환
-        String localImageUrl = downloadAndStoreImageLocally(openAiImageUrl);
+        // 🔥 5. 파일 다운로드 try-catch
+        String localImageUrl = null;
+        try {
+            localImageUrl = downloadAndStoreImageLocally(openAiImageUrl);
+        } catch (Exception e) {
+            System.out.println("❌ 이미지 다운로드/저장 오류 발생!");
+            e.printStackTrace();
+            throw new RuntimeException("로컬 저장 실패: " + e.getMessage(), e);
+        }
+
         System.out.println("서버에 저장된 썸네일 URL: " + localImageUrl);
 
         return localImageUrl;
